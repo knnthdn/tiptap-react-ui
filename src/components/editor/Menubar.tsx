@@ -1,0 +1,1677 @@
+import { ButtonHTMLAttributes, useEffect, useState } from "react";
+import { Editor, useEditorState } from "@tiptap/react";
+import { Button } from "../ui/button";
+import type { Level as HeadingsLevel } from "@tiptap/extension-heading";
+
+import {
+  Bold,
+  ChevronDown,
+  Code,
+  Highlighter,
+  ImagePlus,
+  Italic,
+  Link2,
+  List,
+  ListOrdered,
+  ListTodo,
+  LucideIcon,
+  MessageSquareQuote,
+  Minus,
+  Redo2,
+  Strikethrough,
+  Table2,
+  Terminal,
+  TextAlignCenter,
+  TextAlignEnd,
+  TextAlignJustify,
+  TextAlignStart,
+  TextWrap,
+  Underline,
+  Undo2,
+  Video,
+  CaseSensitive,
+  Save,
+} from "lucide-react";
+import { isValidYoutubeUrl } from "@tiptap/extension-youtube";
+import { cn } from "../../lib/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "../ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
+import chroma from "chroma-js";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+import { Separator } from "../ui/separator";
+import { ImageUploadButton } from "../tiptap-ui/image-upload-button";
+
+const TEXT_COLOR_PRESETS = [
+  "#111827",
+  "#ef4444",
+  "#f97316",
+  "#eab308",
+  "#22c55e",
+  "#3b82f6",
+  "#8b5cf6",
+  "#ec4899",
+  "#6b7280",
+  "#ffffff",
+] as const;
+
+const HIGHLIGHT_PRESETS = [
+  "#ffcc00",
+  "#f59e0b",
+  "#fb7185",
+  "#f97316",
+  "#a3e635",
+  "#34d399",
+  "#38bdf8",
+  "#818cf8",
+  "#c084fc",
+  "#f9a8d4",
+] as const;
+
+// const TEXT_BLOCK_OPTIONS = [
+//   {
+//     key: "paragraph",
+//     label: "Paragraph",
+//     title: "Paragraph (Control + Alt + 0)",
+//   },
+//   {
+//     key: "heading1",
+//     label: "Heading 1",
+//     level: 1,
+//     title: "Heading 1 (Control + Alt + 1)",
+//   },
+//   {
+//     key: "heading2",
+//     label: "Heading 2",
+//     level: 2,
+//     title: "Heading 2 (Control + Alt + 2)",
+//   },
+//   {
+//     key: "heading3",
+//     label: "Heading 3",
+//     level: 3,
+//     title: "Heading 3 (Control + Alt + 3)",
+//   },
+//   {
+//     key: "heading4",
+//     label: "Heading 4",
+//     level: 4,
+//     title: "Heading 4 (Control + Alt + 4)",
+//   },
+//   {
+//     key: "heading5",
+//     label: "Heading 5",
+//     level: 5,
+//     title: "Heading 5 (Control + Alt + 5)",
+//   },
+//   {
+//     key: "heading6",
+//     label: "Heading 6",
+//     level: 6,
+//     title: "Heading 6 (Control + Alt + 6)",
+//   },
+// ] as const;
+
+const FONT_SIZE_OPTIONS = [
+  { key: "default", label: "16px", value: null },
+  { key: "12", label: "12px", value: "12px" },
+  { key: "14", label: "14px", value: "14px" },
+  { key: "16", label: "16px", value: "16px" },
+  { key: "18", label: "18px", value: "18px" },
+  { key: "20", label: "20px", value: "20px" },
+  { key: "24", label: "24px", value: "24px" },
+  { key: "30", label: "30px", value: "30px" },
+  { key: "36", label: "36px", value: "36px" },
+  { key: "48", label: "48px", value: "48px" },
+  { key: "72", label: "72px", value: "72px" },
+] as const;
+
+const FONT_FAMILY_OPTIONS = [
+  { key: "default", label: "Calibri", value: null },
+  { key: "calibri", label: "Calibri", value: "Calibri" },
+  { key: "inter", label: "Inter", value: "Inter" },
+  { key: "arial", label: "Arial", value: "Arial" },
+  { key: "arial-black", label: "Arial Black", value: "Arial Black" },
+  { key: "bahnschrift", label: "Bahnschrift", value: "Bahnschrift" },
+  { key: "cursive", label: "Cursive", value: "Cursive" },
+  { key: "comicSansMs", label: "Comic Sans", value: "Comic Sans MS" },
+  { key: "monospace", label: "Monospace", value: "monospace" },
+
+  {
+    key: "century-gothic",
+    label: "Century Gothic",
+    value: "Century Gothic",
+  },
+  {
+    key: "franklin-gothic-medium",
+    label: "Franklin Gothic Medium",
+    value: "Franklin Gothic Medium",
+  },
+  { key: "segoe-ui", label: "Segoe UI", value: "Segoe UI" },
+  { key: "tahoma", label: "Tahoma", value: "Tahoma" },
+  { key: "verdana", label: "Verdana", value: "Verdana" },
+] as const;
+
+// type TextBlockKey = (typeof TEXT_BLOCK_OPTIONS)[number]["key"];
+
+function isReadable(fg: string, bg: string) {
+  const ratio = chroma.contrast(fg, bg);
+  return ratio >= 4.5;
+}
+
+function getReadableTextColor(background: string) {
+  return isReadable("#ffffff", background) ? "#ffffff" : "#111827";
+}
+
+type MenubarProps = {
+  editor: Editor;
+  highlightColor: string;
+  onHighlightColorChange: (color: string) => void;
+  handleUserSaveAction: () => void;
+  hasOnSave: boolean;
+};
+
+export default function Menubar({
+  editor,
+  highlightColor,
+  handleUserSaveAction,
+  hasOnSave,
+  onHighlightColorChange,
+}: MenubarProps) {
+  const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false);
+  const [linkUrl, setLinkUrl] = useState("https://");
+  const [isImageDialogOpen, setIsImageDialogOpen] = useState(false);
+  const [imageUrl, setImageUrl] = useState("https://");
+  const [imageAlt, setImageAlt] = useState("");
+  const [imageTitle, setImageTitle] = useState("");
+  const [isInsertTableDialogOpen, setIsInsertTableDialogOpen] = useState(false);
+  const [tableRows, setTableRows] = useState(3);
+  const [tableCols, setTableCols] = useState(3);
+  const [tableWithHeaderRow, setTableWithHeaderRow] = useState(true);
+  const [customHighlightColor, setCustomHighlightColor] =
+    useState<string>(highlightColor);
+  const [isHighlightMenuOpen, setIsHighlightMenuOpen] = useState(false);
+  // const [isTextBlockMenuOpen, setIsTextBlockMenuOpen] =
+  useState<boolean>(false);
+  const [isFontSizeMenuOpen, setIsFontSizeMenuOpen] = useState(false);
+  const [isFontFamilyMenuOpen, setIsFontFamilyMenuOpen] = useState(false);
+  const [isYoutubeDialogOpen, setIsYoutubeDialogOpen] = useState(false);
+  const [youtubeUrl, setYoutubeUrl] = useState("");
+  const [youtubeWidth, setYoutubeWidth] = useState(640);
+  const [youtubeHeight, setYoutubeHeight] = useState(480);
+  const [youtubeFullWidth, setYoutubeFullWidth] = useState(false);
+  const [isTextColorMenuOpen, setIsTextColorMenuOpen] = useState(false);
+  const [customTextColor, setCustomTextColor] = useState<string>("#111827");
+  const [customTextColorInput, setCustomTextColorInput] =
+    useState<string>("#111827");
+  const [isAlignMenuOpen, setIsAlignMenuOpen] = useState(false);
+  const [isTextBlockMenuOpen, setIsTextBlockMenuOpen] =
+    useState<boolean>(false);
+
+  //* EDITOR STATE
+  const editorState = useEditorState({
+    editor,
+    selector: () => {
+      return {
+        //* MARKS
+        isBold: editor.isActive("bold"),
+        isItalic: editor.isActive("italic"),
+        isUnderlined: editor.isActive("underline"),
+        isStrike: editor.isActive("strike"),
+        isCode: editor.isActive("code"),
+        isLink: editor.isActive("link"),
+        isHighlight: editor.isActive("highlight"),
+        highlightColor: (editor.getAttributes("highlight").color ?? null) as
+          | string
+          | null,
+        fontSize: (editor.getAttributes("textStyle").fontSize ?? null) as
+          | string
+          | null,
+        fontFamily: (editor.getAttributes("textStyle").fontFamily ?? null) as
+          | string
+          | null,
+        textColor: (editor.getAttributes("textStyle").color ?? null) as
+          | string
+          | null,
+        canUndo: editor.can().chain().undo().run(),
+        canRedo: editor.can().chain().redo().run(),
+
+        //* BLOCK TYPES
+        isParagraph: editor.isActive("paragraph"),
+        isHeading1: editor.isActive("heading", { level: 1 }),
+        isHeading2: editor.isActive("heading", { level: 2 }),
+        isHeading3: editor.isActive("heading", { level: 3 }),
+        isHeading4: editor.isActive("heading", { level: 4 }),
+        isHeading5: editor.isActive("heading", { level: 5 }),
+        isHeading6: editor.isActive("heading", { level: 6 }),
+        isQuote: editor.isActive("blockquote"),
+        isCodeBlock: editor.isActive("codeBlock"),
+
+        //* Lists and blocks
+        isOrderedList: editor.isActive("orderedList"),
+        isBulletList: editor.isActive("bulletList"),
+        isTaskItem: editor.isActive("taskItem"),
+        isTable: editor.isActive("table"),
+
+        //* TEXTALIGN
+        isAlignLeft: editor.isActive({ textAlign: "left" }),
+        isAlignRight: editor.isActive({ textAlign: "right" }),
+        isAlignCenter: editor.isActive({ textAlign: "center" }),
+        isAlignJustify: editor.isActive({ textAlign: "justify" }),
+
+        isImage: editor.isActive("image") || editor.isActive("imagePlus"),
+        isYoutube: editor.isActive("youtube"),
+      };
+    },
+  });
+
+  const textBlocks = [
+    {
+      label: "Heading 1",
+      level: 1,
+      state: editorState.isHeading1,
+    },
+    {
+      label: "Heading 2",
+      level: 2,
+      state: editorState.isHeading2,
+    },
+    {
+      label: "Heading 3",
+      level: 3,
+      state: editorState.isHeading3,
+    },
+    {
+      label: "Heading 4",
+      level: 4,
+      state: editorState.isHeading4,
+    },
+    {
+      label: "Heading 5",
+      level: 5,
+      state: editorState.isHeading5,
+    },
+    {
+      label: "Heading 6",
+      level: 6,
+      state: editorState.isHeading6,
+    },
+  ];
+
+  //* HANDLE LINK FUNCTIONS
+  const handleLinkClick = () => {
+    if (editorState.isLink) {
+      editor.chain().focus().unsetLink().run();
+      return;
+    }
+
+    const previousUrl = editor.getAttributes("link").href as string | undefined;
+    setLinkUrl(previousUrl ?? "https://");
+    setIsLinkDialogOpen(true);
+  };
+
+  const handleSubmitLink = () => {
+    const trimmedUrl = linkUrl.trim();
+
+    if (!trimmedUrl) {
+      editor.chain().focus().unsetLink().run();
+      setIsLinkDialogOpen(false);
+      return;
+    }
+
+    editor
+      .chain()
+      .focus()
+      .extendMarkRange("link")
+      .setLink({ href: trimmedUrl })
+      .run();
+    setIsLinkDialogOpen(false);
+  };
+
+  const handleImageClick = () => {
+    const imageAttributes = editor.getAttributes("image") as {
+      src?: string;
+      alt?: string;
+      title?: string;
+    };
+
+    setImageUrl(imageAttributes.src ?? "https://");
+    setImageAlt(imageAttributes.alt ?? "");
+    setImageTitle(imageAttributes.title ?? "");
+    setIsImageDialogOpen(true);
+  };
+
+  const handleSubmitImage = () => {
+    const trimmedUrl = imageUrl.trim();
+
+    if (!trimmedUrl) {
+      return;
+    }
+
+    const trimmedAlt = imageAlt.trim();
+    const trimmedTitle = imageTitle.trim();
+
+    editor
+      .chain()
+      .focus()
+      .setImage({
+        src: trimmedUrl,
+        alt: trimmedAlt || undefined,
+        title: trimmedTitle || undefined,
+      })
+      .run();
+
+    setIsImageDialogOpen(false);
+  };
+
+  const clampTableDimension = (value: number) => {
+    if (!Number.isFinite(value)) return 1;
+    return Math.min(50, Math.max(1, Math.trunc(value)));
+  };
+
+  const handleInsertTable = () => {
+    const rows = clampTableDimension(tableRows);
+    const cols = clampTableDimension(tableCols);
+
+    editor
+      .chain()
+      .focus()
+      .insertTable({ rows, cols, withHeaderRow: tableWithHeaderRow })
+      .run();
+
+    setTableRows(rows);
+    setTableCols(cols);
+    setIsInsertTableDialogOpen(false);
+  };
+
+  const clampDimension = (value: number, fallback: number) => {
+    if (!Number.isFinite(value) || value < 1) return fallback;
+    return Math.min(7680, Math.trunc(value));
+  };
+
+  const toDimension = (value: unknown, fallback: number) => {
+    if (typeof value === "number") {
+      return clampDimension(value, fallback);
+    }
+    if (typeof value === "string") {
+      const parsed = Number(value.replace("px", "").trim());
+      return clampDimension(parsed, fallback);
+    }
+    return fallback;
+  };
+
+  const openYoutubeDialog = () => {
+    if (editorState.isYoutube) {
+      const youtubeAttributes = editor.getAttributes("youtube") as {
+        src?: string;
+        width?: number | string;
+        height?: number | string;
+      };
+      const isFullWidth = String(youtubeAttributes.width) === "100%";
+
+      setYoutubeUrl(youtubeAttributes.src ?? "");
+      setYoutubeWidth(toDimension(youtubeAttributes.width, 640));
+      setYoutubeHeight(toDimension(youtubeAttributes.height, 480));
+      setYoutubeFullWidth(isFullWidth);
+    } else {
+      setYoutubeUrl("");
+      setYoutubeWidth(640);
+      setYoutubeHeight(480);
+      setYoutubeFullWidth(false);
+    }
+
+    setIsYoutubeDialogOpen(true);
+  };
+
+  const handleSubmitYoutube = () => {
+    const trimmed = youtubeUrl.trim();
+    if (!trimmed || !isValidYoutubeUrl(trimmed)) {
+      return;
+    }
+
+    if (editorState.isYoutube) {
+      if (youtubeFullWidth) {
+        editor
+          .chain()
+          .focus()
+          .updateAttributes("youtube", {
+            src: trimmed,
+            // iframe accepts %; types only list number
+            width: "100%" as unknown as number,
+            height: "100%" as unknown as number,
+          })
+          .run();
+      } else {
+        const w = clampDimension(youtubeWidth, 640);
+        const h = clampDimension(youtubeHeight, 480);
+
+        editor
+          .chain()
+          .focus()
+          .updateAttributes("youtube", {
+            src: trimmed,
+            width: w,
+            height: h,
+          })
+          .run();
+      }
+    } else {
+      if (youtubeFullWidth) {
+        editor
+          .chain()
+          .focus()
+          .setYoutubeVideo({
+            src: trimmed,
+            // iframe accepts %; types only list number
+            width: "100%" as unknown as number,
+            height: "100%" as unknown as number,
+          })
+          .run();
+      } else {
+        const w = clampDimension(youtubeWidth, 640);
+        const h = clampDimension(youtubeHeight, 480);
+
+        editor
+          .chain()
+          .focus()
+          .setYoutubeVideo({
+            src: trimmed,
+            width: w,
+            height: h,
+          })
+          .run();
+      }
+    }
+
+    setIsYoutubeDialogOpen(false);
+  };
+
+  //* HANDLE HIGHLIGHT FUNCTIONS
+  const setHighlightColorValue = (color: string) => {
+    const normalizedColor = color.trim();
+
+    if (!chroma.valid(normalizedColor)) {
+      return;
+    }
+
+    onHighlightColorChange(normalizedColor);
+    setCustomHighlightColor(normalizedColor);
+
+    if (!editor.state.selection.empty) {
+      const textColor = getReadableTextColor(normalizedColor);
+
+      editor
+        .chain()
+        .focus()
+        .setColor(textColor)
+        .setHighlight({ color: normalizedColor })
+        .run();
+    }
+
+    setIsHighlightMenuOpen(false);
+  };
+
+  const applyHighlightColor = (color: string) => {
+    const normalizedColor = color.trim();
+
+    if (!chroma.valid(normalizedColor)) {
+      return;
+    }
+
+    const textColor = getReadableTextColor(normalizedColor);
+
+    onHighlightColorChange(normalizedColor);
+    setCustomHighlightColor(normalizedColor);
+
+    if (editorState.isHighlight) {
+      editor.chain().focus().unsetHighlight().unsetColor().run();
+      return;
+    }
+
+    editor
+      .chain()
+      .focus()
+      .setColor(textColor)
+      .setHighlight({ color: normalizedColor })
+      .run();
+  };
+
+  //* LINK USE-EFFECT
+  useEffect(() => {
+    function checkDialogState() {
+      const previousUrl = editor.getAttributes("link").href as
+        | string
+        | undefined;
+      setLinkUrl(previousUrl ?? "https://");
+    }
+
+    if (!isLinkDialogOpen) {
+      return;
+    }
+
+    checkDialogState();
+  }, [editor, isLinkDialogOpen]);
+
+  //* HIGHLIGHT USE-EFFECT
+  useEffect(() => {
+    (() => {
+      const activeHighlightColor = editorState.highlightColor;
+
+      if (!activeHighlightColor || !chroma.valid(activeHighlightColor)) {
+        return;
+      }
+
+      onHighlightColorChange(activeHighlightColor);
+      setCustomHighlightColor(activeHighlightColor);
+    })();
+  }, [editorState.highlightColor, onHighlightColorChange]);
+
+  useEffect(() => {
+    (() => {
+      setCustomHighlightColor(highlightColor);
+    })();
+  }, [highlightColor]);
+
+  const currentHighlightColor =
+    editorState.highlightColor && chroma.valid(editorState.highlightColor)
+      ? editorState.highlightColor
+      : highlightColor;
+
+  // //* HANDLE TEXTBLOCK
+  // const textBlockState: Record<TextBlockKey, boolean> = {
+  //   paragraph: editorState.isParagraph,
+  //   heading1: editorState.isHeading1,
+  //   heading2: editorState.isHeading2,
+  //   heading3: editorState.isHeading3,
+  //   heading4: editorState.isHeading4,
+  //   heading5: editorState.isHeading5,
+  //   heading6: editorState.isHeading6,
+  // };
+
+  // const activeTextBlock =
+  //   TEXT_BLOCK_OPTIONS.find((option) => textBlockState[option.key]) ??
+  //   TEXT_BLOCK_OPTIONS[0];
+
+  const activeFontSize =
+    FONT_SIZE_OPTIONS.find((option) => option.value === editorState.fontSize) ??
+    FONT_SIZE_OPTIONS[0];
+
+  const activeFontFamily =
+    FONT_FAMILY_OPTIONS.find(
+      (option) => option.value === editorState.fontFamily,
+    ) ?? FONT_FAMILY_OPTIONS[0];
+
+  // Applies the selected text block command and closes the dropdown after updating the editor selection.
+  // const applyTextBlock = (option: (typeof TEXT_BLOCK_OPTIONS)[number]) => {
+  //   const chain = editor.chain().focus();
+
+  //   if (option.key === "paragraph") {
+  //     chain.setParagraph().run();
+  //   } else {
+  //     chain.toggleHeading({ level: option.level }).run();
+  //   }
+
+  //   setIsTextBlockMenuOpen(false);
+  // };
+
+  //* Applies the selected font size to the current selection, or clears it when "Default" is chosen.
+  const applyFontSize = (fontSize: string | null) => {
+    const chain = editor.chain().focus();
+
+    if (fontSize) {
+      chain.setFontSize(fontSize).run();
+    } else {
+      chain.unsetFontSize().run();
+    }
+
+    setIsFontSizeMenuOpen(false);
+  };
+
+  //* Applies the selected font family to the current selection, or clears it when the default family is chosen.
+  const applyFontFamily = (fontFamily: string | null) => {
+    const chain = editor.chain().focus();
+
+    if (fontFamily) {
+      chain.setFontFamily(fontFamily).run();
+    } else {
+      chain.unsetFontFamily().run();
+    }
+
+    setIsFontFamilyMenuOpen(false);
+  };
+
+  //* TEXT COLOR FUNCTIONS
+  const currentTextColor =
+    editorState.textColor && chroma.valid(editorState.textColor)
+      ? editorState.textColor
+      : customTextColor;
+
+  const applyTextColor = (color: string) => {
+    const normalizedColor = color.trim();
+
+    if (!chroma.valid(normalizedColor)) {
+      return;
+    }
+
+    setCustomTextColor(normalizedColor);
+    setCustomTextColorInput(normalizedColor);
+    editor.chain().focus().setColor(normalizedColor).run();
+    setIsTextColorMenuOpen(false);
+  };
+
+  const removeTextColor = () => {
+    editor.chain().focus().unsetColor().run();
+    setCustomTextColor("#111827");
+    setCustomTextColorInput("#111827");
+    setIsTextColorMenuOpen(false);
+  };
+
+  const toggleTextColor = () => {
+    if (editorState.textColor) {
+      editor.chain().focus().unsetColor().run();
+      setCustomTextColor("#111827");
+      setCustomTextColorInput("#111827");
+    } else {
+      const normalizedColor = currentTextColor.trim();
+      if (chroma.valid(normalizedColor)) {
+        setCustomTextColor(normalizedColor);
+        setCustomTextColorInput(normalizedColor);
+        editor.chain().focus().setColor(normalizedColor).run();
+      }
+    }
+  };
+
+  const ActiveAlignIcon = editorState.isAlignLeft
+    ? TextAlignStart
+    : editorState.isAlignCenter
+      ? TextAlignCenter
+      : editorState.isAlignRight
+        ? TextAlignEnd
+        : editorState.isAlignJustify
+          ? TextAlignJustify
+          : TextAlignStart;
+
+  const isAnyAlignActive =
+    editorState.isAlignLeft ||
+    editorState.isAlignCenter ||
+    editorState.isAlignRight ||
+    editorState.isAlignJustify;
+
+  return (
+    <>
+      <div className="bg-gray-100 p-2 rounded-t-sm border border-b-0 dark:bg-[#171717] flex gap-2.5 flex-wrap">
+        {/* ── GROUP 1: HISTORY ── */}
+        <div className="flex items-center gap-1">
+          <MenuBottons
+            onClick={() => editor.chain().focus().undo().run()}
+            state={false}
+            Icon={Undo2}
+            title="Undo (CTRL + Z)"
+            disabled={!editorState.canUndo}
+          />
+          <MenuBottons
+            onClick={() => editor.chain().focus().redo().run()}
+            state={false}
+            Icon={Redo2}
+            title="Redo (CTRL + Y)"
+            disabled={!editorState.canRedo}
+          />
+          <Separator orientation="vertical" />
+        </div>
+
+        {/* ── GROUP 2: BLOCK TYPE (Paragraph / Headings) ── */}
+        {/* <div className="flex items-center gap-1">
+          <DropdownMenu
+            open={isTextBlockMenuOpen}
+            onOpenChange={setIsTextBlockMenuOpen}
+          >
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                className="cursor-pointer text-gray-800 dark:text-white"
+              >
+                {activeTextBlock.label}
+                <ChevronDown />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="max-h-60 px-0 py-0 overflow-hidden">
+              {TEXT_BLOCK_OPTIONS.map((option) => (
+                <TextBlockButton
+                  key={option.key}
+                  label={option.label}
+                  onClick={() => applyTextBlock(option)}
+                  state={textBlockState[option.key]}
+                  title={option.title}
+                />
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Separator orientation="vertical" className="ml-1" />
+        </div> */}
+
+        {/* ── GROUP 3: TYPOGRAPHY (Font Family + Font Size + Headings) ── */}
+        <div className="flex items-center gap-1">
+          <DropdownMenu
+            open={isTextBlockMenuOpen}
+            onOpenChange={setIsTextBlockMenuOpen}
+          >
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                className="cursor-pointer text-gray-800 dark:text-white"
+              >
+                {editorState.isHeading1 && <HeadingsIcon label="1" />}
+
+                {editorState.isHeading2 && <HeadingsIcon label="2" />}
+
+                {editorState.isHeading3 && <HeadingsIcon label="3" />}
+
+                {editorState.isHeading4 && <HeadingsIcon label="4" />}
+
+                {editorState.isHeading5 && <HeadingsIcon label="5" />}
+
+                {editorState.isHeading6 && <HeadingsIcon label="6" />}
+
+                {!editor.isActive("heading") && <span>H</span>}
+                <ChevronDown />
+              </Button>
+            </DropdownMenuTrigger>
+
+            <DropdownMenuContent className="max-h-60 px-0 py-0 overflow-hidden">
+              {textBlocks.map((options, i) => {
+                return (
+                  <TextBlockButton
+                    key={i}
+                    label={options.label}
+                    onClick={() => {
+                      editor
+                        .chain()
+                        .toggleHeading({
+                          level: options.level as HeadingsLevel,
+                        })
+                        .run();
+
+                      setIsTextBlockMenuOpen(false);
+                    }}
+                    state={options.state}
+                    title={options.label}
+                  />
+                );
+              })}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <DropdownMenu
+            open={isFontFamilyMenuOpen}
+            onOpenChange={setIsFontFamilyMenuOpen}
+          >
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                className="min-w-28 cursor-pointer text-gray-800 dark:text-white"
+              >
+                {activeFontFamily.label}
+                <ChevronDown />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="min-w-50 max-h-80 px-0 py-0 overflow-auto">
+              {FONT_FAMILY_OPTIONS.map((option) => (
+                <TextBlockButton
+                  key={option.key}
+                  label={option.label}
+                  onClick={() => applyFontFamily(option.value)}
+                  state={activeFontFamily.key === option.key}
+                  title={`Font Family ${option.label}`}
+                />
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <DropdownMenu
+            open={isFontSizeMenuOpen}
+            onOpenChange={setIsFontSizeMenuOpen}
+          >
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                className="min-w-20 cursor-pointer text-gray-800 dark:text-white"
+              >
+                {activeFontSize.label}
+                <ChevronDown />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="max-h-60 px-0 py-0 w-5">
+              {FONT_SIZE_OPTIONS.map((option) => (
+                <TextBlockButton
+                  key={option.key}
+                  label={option.label}
+                  onClick={() => applyFontSize(option.value)}
+                  state={activeFontSize.key === option.key}
+                  title={`Font Size ${option.label}`}
+                />
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Separator orientation="vertical" className="ml-1" />
+        </div>
+
+        {/* ── GROUP 4: INLINE FORMATTING (Bold, Italic, Underline, Strikethrough) ── */}
+        <div className="flex items-center gap-1">
+          <MenuBottons
+            onClick={() => editor.chain().focus().toggleBold().run()}
+            state={editorState.isBold}
+            Icon={Bold}
+            title="Bold (CTRL + B)"
+          />
+          <MenuBottons
+            onClick={() => editor.chain().focus().toggleItalic().run()}
+            state={editorState.isItalic}
+            Icon={Italic}
+            title="Italic (CTRL + I)"
+          />
+          <MenuBottons
+            onClick={() => editor.chain().focus().toggleUnderline().run()}
+            state={editorState.isUnderlined}
+            Icon={Underline}
+            title="Underline (CTRL + U)"
+          />
+          <MenuBottons
+            onClick={() => editor.chain().focus().toggleStrike().run()}
+            state={editorState.isStrike}
+            Icon={Strikethrough}
+            title="StrikeThrough (CTRL + SHFT + S)"
+          />
+          <Separator orientation="vertical" />
+        </div>
+
+        {/* ── GROUP 5: TEXT COLOR & HIGHLIGHT ── */}
+        <div className="flex items-center gap-1">
+          {/* TEXT COLOR */}
+          <div
+            className={cn(
+              "inline-flex items-center rounded-md border",
+              editorState.textColor && "border-border",
+            )}
+          >
+            <Button
+              title="Apply text color"
+              size="icon"
+              onClick={toggleTextColor}
+              className={cn(
+                "relative cursor-pointer rounded-r-none border-0 bg-transparent px-2",
+                editorState.textColor && "bg-foreground shadow-xs",
+              )}
+              data-active={!!editorState.textColor}
+            >
+              <CaseSensitive
+                className={cn(
+                  "size-4",
+                  editorState.textColor
+                    ? "text-white dark:text-black"
+                    : "text-black dark:text-white",
+                )}
+              />
+              <span
+                className={cn(
+                  "absolute right-1.5 bottom-0.5 left-1.5 h-0.5 rounded-full",
+                  editorState.textColor && "h-1",
+                )}
+                style={{ backgroundColor: currentTextColor }}
+              />
+            </Button>
+            <DropdownMenu
+              open={isTextColorMenuOpen}
+              onOpenChange={setIsTextColorMenuOpen}
+            >
+              <DropdownMenuTrigger asChild>
+                <Button
+                  title="Choose text color"
+                  size="icon"
+                  variant="ghost"
+                  className="cursor-pointer rounded-l-none border-0 border-l border-border/50 bg-transparent px-1.5"
+                >
+                  <ChevronDown className="size-3.5 text-black dark:text-white" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="start"
+                sideOffset={8}
+                className="w-56"
+              >
+                <DropdownMenuLabel>Text color</DropdownMenuLabel>
+                <div className="grid grid-cols-5 gap-2 px-1 py-2">
+                  {TEXT_COLOR_PRESETS.map((color) => (
+                    <button
+                      key={color}
+                      type="button"
+                      title={color}
+                      aria-label={color}
+                      onClick={() => applyTextColor(color)}
+                      className={cn(
+                        "size-8 cursor-pointer rounded-md border border-border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                        currentTextColor.toLowerCase() ===
+                          color.toLowerCase() && "ring-2 ring-ring",
+                      )}
+                      style={{ backgroundColor: color }}
+                    />
+                  ))}
+                </div>
+                <DropdownMenuSeparator />
+                <div className="px-1 py-1 space-y-1">
+                  <input
+                    type="text"
+                    value={customTextColorInput}
+                    onChange={(event) =>
+                      setCustomTextColorInput(event.target.value)
+                    }
+                    onKeyDown={(event) => {
+                      event.stopPropagation();
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        applyTextColor(customTextColorInput);
+                      }
+                    }}
+                    placeholder="#111827"
+                    className="flex h-8 w-full rounded-md border border-input bg-transparent px-2 text-sm shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                  />
+                  <button
+                    type="button"
+                    onClick={removeTextColor}
+                    className="flex h-8 w-full items-center justify-center rounded-md border border-input bg-transparent px-2 text-xs text-muted-foreground transition hover:bg-accent hover:text-accent-foreground"
+                  >
+                    Remove color
+                  </button>
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
+          {/* HIGHLIGHT */}
+          <div
+            className={cn(
+              "inline-flex items-center rounded-md border",
+              editorState.isHighlight && "border-border",
+            )}
+          >
+            <Button
+              title="Highlight (CTRL + SHFT + H)"
+              size="icon"
+              onClick={() => applyHighlightColor(currentHighlightColor)}
+              className={cn(
+                "relative cursor-pointer rounded-r-none border-0 bg-transparent px-2",
+                editorState.isHighlight && "bg-foreground shadow-xs",
+              )}
+              data-active={editorState.isHighlight}
+            >
+              <Highlighter
+                className={cn(
+                  "size-4",
+                  editorState.isHighlight
+                    ? "text-white dark:text-black"
+                    : "text-black dark:text-white",
+                )}
+              />
+              <span
+                className={cn(
+                  "absolute right-1.5 bottom-0.5 left-1.5 h-0.5 rounded-full",
+                  editorState.isHighlight && "h-1",
+                )}
+                style={{ backgroundColor: currentHighlightColor }}
+              />
+            </Button>
+            <DropdownMenu
+              open={isHighlightMenuOpen}
+              onOpenChange={setIsHighlightMenuOpen}
+            >
+              <DropdownMenuTrigger asChild>
+                <Button
+                  title="Choose highlight color"
+                  size="icon"
+                  variant="ghost"
+                  className="cursor-pointer rounded-l-none border-0 border-l border-border/50 bg-transparent px-1.5"
+                >
+                  <ChevronDown className="size-3.5 text-black dark:text-white" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="start"
+                sideOffset={8}
+                className="w-56"
+              >
+                <DropdownMenuLabel>Highlight color</DropdownMenuLabel>
+                <div className="grid grid-cols-5 gap-2 px-1 py-2">
+                  {HIGHLIGHT_PRESETS.map((color) => (
+                    <button
+                      key={color}
+                      type="button"
+                      title={color}
+                      aria-label={color}
+                      onClick={() => setHighlightColorValue(color)}
+                      className={cn(
+                        "size-8 cursor-pointer rounded-md border border-border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                        currentHighlightColor.toLowerCase() ===
+                          color.toLowerCase() && "ring-2 ring-ring",
+                      )}
+                      style={{ backgroundColor: color }}
+                    />
+                  ))}
+                </div>
+                <DropdownMenuSeparator />
+                <div className="px-1 py-1">
+                  <input
+                    type="text"
+                    value={customHighlightColor}
+                    onChange={(event) =>
+                      setCustomHighlightColor(event.target.value)
+                    }
+                    onKeyDown={(event) => {
+                      event.stopPropagation();
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        setHighlightColorValue(customHighlightColor);
+                      }
+                    }}
+                    placeholder="#ffcc00"
+                    className="flex h-8 w-full rounded-md border border-input bg-transparent px-2 text-sm shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                  />
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
+          <Separator orientation="vertical" className="ml-1" />
+        </div>
+
+        {/* ── GROUP 6: LINK & INLINE CODE ── */}
+        <div className="flex items-center gap-1">
+          <MenuBottons
+            onClick={handleLinkClick}
+            state={editorState.isLink}
+            Icon={Link2}
+            title="Insert Link"
+          />
+          <MenuBottons
+            onClick={() => editor.chain().focus().toggleCode().run()}
+            state={editorState.isCode}
+            Icon={Code}
+            title="Inline Code (CTRL + E)"
+          />
+          <Separator orientation="vertical" />
+        </div>
+
+        {/* ── GROUP 7: TEXT ALIGNMENT ── */}
+        <div className="flex items-center gap-1">
+          {/* Desktop: individual buttons */}
+          <div className="hidden md:flex items-center gap-1">
+            <MenuBottons
+              onClick={() =>
+                editor.chain().focus().toggleTextAlign("left").run()
+              }
+              state={editorState.isAlignLeft}
+              Icon={TextAlignStart}
+              title="Text Align Left (CTRL + SHFT + L)"
+            />
+            <MenuBottons
+              onClick={() =>
+                editor.chain().focus().toggleTextAlign("center").run()
+              }
+              state={editorState.isAlignCenter}
+              Icon={TextAlignCenter}
+              title="Text Align Center (CTRL + SHFT + E)"
+            />
+            <MenuBottons
+              onClick={() =>
+                editor.chain().focus().toggleTextAlign("right").run()
+              }
+              state={editorState.isAlignRight}
+              Icon={TextAlignEnd}
+              title="Text Align Right (CTRL + SHFT + R)"
+            />
+            <MenuBottons
+              onClick={() =>
+                editor.chain().focus().toggleTextAlign("justify").run()
+              }
+              state={editorState.isAlignJustify}
+              Icon={TextAlignJustify}
+              title="Text Align Justify (CTRL + SHFT + J)"
+            />
+          </div>
+
+          {/* Mobile: dropdown */}
+          <div className="flex md:hidden items-center gap-1">
+            <DropdownMenu
+              open={isAlignMenuOpen}
+              onOpenChange={setIsAlignMenuOpen}
+            >
+              <DropdownMenuTrigger asChild>
+                <Button
+                  title="Align"
+                  variant="outline"
+                  // size="icon"
+                  className={cn(
+                    "cursor-pointer bg-transparent",
+                    isAnyAlignActive &&
+                      "bg-gray-800 text-white dark:bg-white dark:text-gray-800",
+                  )}
+                >
+                  <ActiveAlignIcon className={cn("size-4")} />
+                  <ChevronDown size={1} />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="px-0 py-0 w-48">
+                <TextBlockButton
+                  label="Align Left"
+                  onClick={() => {
+                    editor.chain().focus().toggleTextAlign("left").run();
+                    setIsAlignMenuOpen(false);
+                  }}
+                  state={editorState.isAlignLeft}
+                  title="Text Align Left (CTRL + SHFT + L)"
+                />
+                <TextBlockButton
+                  label="Align Center"
+                  onClick={() => {
+                    editor.chain().focus().toggleTextAlign("center").run();
+                    setIsAlignMenuOpen(false);
+                  }}
+                  state={editorState.isAlignCenter}
+                  title="Text Align Center (CTRL + SHFT + E)"
+                />
+                <TextBlockButton
+                  label="Align Right"
+                  onClick={() => {
+                    editor.chain().focus().toggleTextAlign("right").run();
+                    setIsAlignMenuOpen(false);
+                  }}
+                  state={editorState.isAlignRight}
+                  title="Text Align Right (CTRL + SHFT + R)"
+                />
+                <TextBlockButton
+                  label="Align Justify"
+                  onClick={() => {
+                    editor.chain().focus().toggleTextAlign("justify").run();
+                    setIsAlignMenuOpen(false);
+                  }}
+                  state={editorState.isAlignJustify}
+                  title="Text Align Justify (CTRL + SHFT + J)"
+                />
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+          <Separator orientation="vertical" />
+        </div>
+
+        {/* ── GROUP 8: LISTS ── */}
+        <div className="flex items-center gap-1">
+          <MenuBottons
+            onClick={() => editor.chain().focus().toggleBulletList().run()}
+            state={editorState.isBulletList}
+            Icon={List}
+            title="Bullet List (CTRL + SHIFT + 8)"
+          />
+          <MenuBottons
+            onClick={() => editor.chain().focus().toggleOrderedList().run()}
+            state={editorState.isOrderedList}
+            Icon={ListOrdered}
+            title="Ordered List (CTRL + SHIFT + 7)"
+          />
+          <MenuBottons
+            onClick={() => editor.chain().focus().toggleTaskList().run()}
+            state={editorState.isTaskItem}
+            Icon={ListTodo}
+            title="Task List (CTRL + SHIFT + 9)"
+          />
+          <Separator orientation="vertical" />
+        </div>
+
+        {/* ── GROUP 9: BLOCK ELEMENTS ── */}
+        <div className="flex items-center gap-1">
+          <MenuBottons
+            onClick={() => editor.chain().focus().toggleBlockquote().run()}
+            state={editorState.isQuote}
+            Icon={MessageSquareQuote}
+            title="BlockQuote (CTRL + SHFT + B)"
+          />
+          <MenuBottons
+            onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+            state={editorState.isCodeBlock}
+            Icon={Terminal}
+            title="Code Block (CTRL + ALT + C)"
+          />
+          <MenuBottons
+            onClick={() => editor.chain().focus().setHorizontalRule().run()}
+            state={false}
+            Icon={Minus}
+            title="Insert Horizontal Rule"
+          />
+          <MenuBottons
+            onClick={() => editor.chain().focus().setHardBreak().run()}
+            state={false}
+            Icon={TextWrap}
+            title="HardBreak (CTRL + ENTER)"
+          />
+          <Separator orientation="vertical" />
+        </div>
+
+        {/* ── GROUP 10: INSERT (Table, Image, YouTube) ── */}
+        <div className="flex items-center gap-1">
+          <MenuBottons
+            onClick={() => {
+              setTableRows(3);
+              setTableCols(3);
+              setTableWithHeaderRow(true);
+              setIsInsertTableDialogOpen(true);
+            }}
+            state={editorState.isTable}
+            Icon={Table2}
+            title="Insert table"
+          />
+
+          <MenuBottons
+            onClick={handleImageClick}
+            state={editorState.isImage}
+            Icon={ImagePlus}
+            title="Insert remote image"
+          />
+
+          <ImageUploadButton
+            editor={editor}
+            text="Upload image"
+            hideWhenUnavailable={true}
+            onInserted={() => console.log("Image inserted!")}
+          />
+
+          <MenuBottons
+            onClick={openYoutubeDialog}
+            state={editorState.isYoutube}
+            Icon={Video}
+            title="Embed YouTube video"
+          />
+        </div>
+
+        {hasOnSave && (
+          <div className="flex items-center gap-1">
+            <Separator orientation="vertical" />
+
+            <MenuBottons
+              onClick={handleUserSaveAction}
+              state={false}
+              Icon={Save}
+              title="Save"
+            />
+          </div>
+        )}
+      </div>
+
+      {/* ── DIALOGS ── */}
+
+      {/* LINK DIALOG */}
+      <Dialog open={isLinkDialogOpen} onOpenChange={setIsLinkDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Insert link</DialogTitle>
+            <DialogDescription>
+              Paste or type the URL you want to apply to the selected text.
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              handleSubmitLink();
+            }}
+            className="space-y-4"
+          >
+            <Input
+              autoFocus
+              type="url"
+              value={linkUrl}
+              onChange={(event) => setLinkUrl(event.target.value)}
+              placeholder="https://example.com"
+            />
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsLinkDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit">Apply link</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* YOUTUBE DIALOG */}
+      <Dialog open={isYoutubeDialogOpen} onOpenChange={setIsYoutubeDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {editorState.isYoutube
+                ? "Edit YouTube video"
+                : "Embed YouTube video"}
+            </DialogTitle>
+            <DialogDescription>
+              Paste a YouTube or YouTube Music link. Choose a size or use full
+              width to match the editor.
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              handleSubmitYoutube();
+            }}
+            className="space-y-4"
+          >
+            <div className="space-y-2">
+              <Label htmlFor="youtube-url">Video URL</Label>
+              <Input
+                id="youtube-url"
+                autoFocus
+                type="url"
+                required
+                value={youtubeUrl}
+                onChange={(event) => setYoutubeUrl(event.target.value)}
+                placeholder="https://www.youtube.com/watch?v=…"
+              />
+            </div>
+            <div className="flex items-center gap-2 text-sm w-fit cursor-pointer select-none">
+              <Input
+                id="youtube-full-width"
+                type="checkbox"
+                checked={youtubeFullWidth}
+                onChange={(event) => setYoutubeFullWidth(event.target.checked)}
+                className="size-4"
+              />
+              <Label htmlFor="youtube-full-width" className="cursor-pointer">
+                Full width (match editor)
+              </Label>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="youtube-width">Width (px)</Label>
+                <Input
+                  id="youtube-width"
+                  type="number"
+                  min={1}
+                  disabled={youtubeFullWidth}
+                  value={youtubeWidth}
+                  onChange={(event) =>
+                    setYoutubeWidth(Number(event.target.value))
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="youtube-height">Height (px)</Label>
+                <Input
+                  id="youtube-height"
+                  type="number"
+                  min={1}
+                  disabled={youtubeFullWidth}
+                  value={youtubeHeight}
+                  onChange={(event) =>
+                    setYoutubeHeight(Number(event.target.value))
+                  }
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsYoutubeDialogOpen(false)}
+                className="cursor-pointer"
+              >
+                Cancel
+              </Button>
+              <Button type="submit" className="cursor-pointer">
+                {editorState.isYoutube ? "Update video" : "Insert video"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* IMAGE DIALOG */}
+      <Dialog open={isImageDialogOpen} onOpenChange={setIsImageDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Insert image</DialogTitle>
+            <DialogDescription>
+              Add image URL, optional alt text, and optional title.
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              handleSubmitImage();
+            }}
+            className="space-y-4"
+          >
+            <div className="space-y-2">
+              <Label htmlFor="image-url">Image URL</Label>
+              <Input
+                id="image-url"
+                autoFocus
+                type="url"
+                required
+                value={imageUrl}
+                onChange={(event) => setImageUrl(event.target.value)}
+                placeholder="https://example.com/image.png"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="image-alt">Alt text (optional)</Label>
+              <Input
+                id="image-alt"
+                type="text"
+                value={imageAlt}
+                onChange={(event) => setImageAlt(event.target.value)}
+                placeholder="Describe the image for accessibility"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="image-title">Title (optional)</Label>
+              <Input
+                id="image-title"
+                type="text"
+                value={imageTitle}
+                onChange={(event) => setImageTitle(event.target.value)}
+                placeholder="Image title tooltip"
+              />
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsImageDialogOpen(false)}
+                className="cursor-pointer"
+              >
+                Cancel
+              </Button>
+              <Button type="submit" className="cursor-pointer">
+                Insert image
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* INSERT TABLE DIALOG */}
+      <Dialog
+        open={isInsertTableDialogOpen}
+        onOpenChange={setIsInsertTableDialogOpen}
+      >
+        <DialogContent
+          className="sm:max-w-md"
+          onOpenAutoFocus={(event) => event.preventDefault()}
+        >
+          <DialogHeader>
+            <DialogTitle>Insert table</DialogTitle>
+            <DialogDescription>
+              Choose how many rows and columns you want.
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              handleInsertTable();
+            }}
+            className="space-y-4"
+          >
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label htmlFor="table-rows">Rows</Label>
+                <Input
+                  id="table-rows"
+                  type="number"
+                  min={1}
+                  max={50}
+                  value={tableRows}
+                  onChange={(event) =>
+                    setTableRows(
+                      clampTableDimension(Number(event.target.value)),
+                    )
+                  }
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="table-columns">Columns</Label>
+                <Input
+                  id="table-columns"
+                  type="number"
+                  min={1}
+                  max={50}
+                  value={tableCols}
+                  onChange={(event) =>
+                    setTableCols(
+                      clampTableDimension(Number(event.target.value)),
+                    )
+                  }
+                />
+              </div>
+            </div>
+            <div className="flex items-center gap-2 text-sm w-fit cursor-pointer select-none">
+              <Input
+                id="table-header-row"
+                type="checkbox"
+                checked={tableWithHeaderRow}
+                onChange={(event) =>
+                  setTableWithHeaderRow(event.target.checked)
+                }
+                className="size-4"
+              />
+              <Label htmlFor="table-header-row" className="cursor-pointer">
+                Header row
+              </Label>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsInsertTableDialogOpen(false)}
+                className="cursor-pointer"
+              >
+                Cancel
+              </Button>
+              <Button type="submit" className="cursor-pointer">
+                Insert
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
+type MenuButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
+  onClick: () => void;
+  state: boolean;
+  Icon: LucideIcon;
+  title: string;
+  className?: string;
+};
+
+function MenuBottons({
+  onClick,
+  state,
+  Icon,
+  title,
+  className,
+  ...props
+}: MenuButtonProps) {
+  return (
+    <Button
+      title={title}
+      onClick={onClick}
+      size="icon"
+      className={cn(
+        "cursor-pointer bg-transparent",
+        className,
+        state && "bg-foreground",
+      )}
+      {...props}
+    >
+      <Icon
+        className={cn(
+          "size-4",
+          state
+            ? "text-white dark:text-gray-800"
+            : "text-gray-800 dark:text-white",
+        )}
+      />
+    </Button>
+  );
+}
+
+type TextBlockButtonProps = {
+  state: boolean;
+  onClick: () => void;
+  label: string;
+  title: string;
+};
+
+function TextBlockButton({
+  label,
+  onClick,
+  state,
+  title,
+}: TextBlockButtonProps) {
+  return (
+    <Button
+      title={title}
+      onClick={onClick}
+      className={cn(
+        "w-full rounded-none text-sm cursor-pointer",
+        state
+          ? "bg-gray-800 text-white dark:bg-white dark:text-gray-800"
+          : "bg-transparent text-gray-800 dark:text-white",
+        !state && "hover:bg-foreground/5",
+      )}
+    >
+      {label}
+    </Button>
+  );
+}
+
+function HeadingsIcon({ label }: { label: string }) {
+  return (
+    <span>
+      H<span className="text-[10px] ml-px">{label}</span>
+    </span>
+  );
+}
