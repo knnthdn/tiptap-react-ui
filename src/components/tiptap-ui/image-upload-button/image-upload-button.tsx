@@ -108,10 +108,8 @@ export const ImageUploadButton = forwardRef<
       >
         {children ?? (
           <>
-            <ImageUp className="size-4 text-gray-800 dark:text-white" />
-            {text && (
-              <span className="text-gray-800 dark:text-white">{text}</span>
-            )}
+            <ImageUp className="size-4 text-foreground" />
+            {text && <span className="text-foreground">{text}</span>}
             {showShortcut && <ImageShortcutBadge shortcutKeys={shortcutKeys} />}
           </>
         )}

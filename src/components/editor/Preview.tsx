@@ -18,9 +18,9 @@ export default function Preview({
   const [editorSetHeight] = useState<number>(editor.view.dom.offsetHeight);
 
   return (
-    <div className="w-full bg-white dark:bg-[#0f0f0f] border border-gray-200 dark:border-gray-800 rounded-lg shadow-sm overflow-hidden">
+    <div className="tr-editor w-full bg-background text-foreground border rounded-lg shadow-sm overflow-hidden">
       {/* Header bar (same design as before) */}
-      <div className="flex justify-between items-center px-3 py-2 border-b border-gray-200 dark:border-gray-800 text-xs text-gray-500 dark:text-gray-400">
+      <div className="flex justify-between items-center px-3 py-2 border-b text-xs text-muted-foreground">
         <div className=" flex items-center gap-2 ">
           <span className="w-2 h-2 rounded-full bg-red-400" />
           <span className="w-2 h-2 rounded-full bg-yellow-400" />

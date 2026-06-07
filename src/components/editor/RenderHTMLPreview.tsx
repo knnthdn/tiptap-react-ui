@@ -16,7 +16,7 @@ export default function RenderHTMLPreview({
   return (
     <div
       className={cn(
-        "tiptap px-4 py-5 max-w-none w-full overflow-y-auto",
+        "tiptap text-left px-4 py-5 max-w-none w-full overflow-y-auto",
         className,
       )}
       style={style}

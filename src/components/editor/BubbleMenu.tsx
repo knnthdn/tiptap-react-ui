@@ -286,8 +286,8 @@ function BubbleButton({
       className={cn(
         "cursor-pointer bg-transparent",
         isActive
-          ? "bg-foreground text-white dark:text-black"
-          : "text-black dark:text-white",
+          ? "bg-primary text-primary-foreground"
+          : "text-foreground",
       )}
     >
       {children}

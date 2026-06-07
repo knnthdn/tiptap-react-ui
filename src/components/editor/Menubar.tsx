@@ -1,4 +1,4 @@
-import { ButtonHTMLAttributes, useEffect, useState } from "react";
+import { ButtonHTMLAttributes, useEffect, useMemo } from "react";
 import { Editor, useEditorState } from "@tiptap/react";
 import { Button } from "../ui/button";
 import type { Level as HeadingsLevel } from "@tiptap/extension-heading";
@@ -54,6 +54,7 @@ import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Separator } from "../ui/separator";
 import { ImageUploadButton } from "../tiptap-ui/image-upload-button";
+import { useMenubarUiState } from "./hooks/useMenubarUiState";
 
 const TEXT_COLOR_PRESETS = [
   "#111827",
@@ -80,50 +81,6 @@ const HIGHLIGHT_PRESETS = [
   "#c084fc",
   "#f9a8d4",
 ] as const;
-
-// const TEXT_BLOCK_OPTIONS = [
-//   {
-//     key: "paragraph",
-//     label: "Paragraph",
-//     title: "Paragraph (Control + Alt + 0)",
-//   },
-//   {
-//     key: "heading1",
-//     label: "Heading 1",
-//     level: 1,
-//     title: "Heading 1 (Control + Alt + 1)",
-//   },
-//   {
-//     key: "heading2",
-//     label: "Heading 2",
-//     level: 2,
-//     title: "Heading 2 (Control + Alt + 2)",
-//   },
-//   {
-//     key: "heading3",
-//     label: "Heading 3",
-//     level: 3,
-//     title: "Heading 3 (Control + Alt + 3)",
-//   },
-//   {
-//     key: "heading4",
-//     label: "Heading 4",
-//     level: 4,
-//     title: "Heading 4 (Control + Alt + 4)",
-//   },
-//   {
-//     key: "heading5",
-//     label: "Heading 5",
-//     level: 5,
-//     title: "Heading 5 (Control + Alt + 5)",
-//   },
-//   {
-//     key: "heading6",
-//     label: "Heading 6",
-//     level: 6,
-//     title: "Heading 6 (Control + Alt + 6)",
-//   },
-// ] as const;
 
 const FONT_SIZE_OPTIONS = [
   { key: "default", label: "16px", value: null },
@@ -191,35 +148,61 @@ export default function Menubar({
   hasOnSave,
   onHighlightColorChange,
 }: MenubarProps) {
-  const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false);
-  const [linkUrl, setLinkUrl] = useState("https://");
-  const [isImageDialogOpen, setIsImageDialogOpen] = useState(false);
-  const [imageUrl, setImageUrl] = useState("https://");
-  const [imageAlt, setImageAlt] = useState("");
-  const [imageTitle, setImageTitle] = useState("");
-  const [isInsertTableDialogOpen, setIsInsertTableDialogOpen] = useState(false);
-  const [tableRows, setTableRows] = useState(3);
-  const [tableCols, setTableCols] = useState(3);
-  const [tableWithHeaderRow, setTableWithHeaderRow] = useState(true);
-  const [customHighlightColor, setCustomHighlightColor] =
-    useState<string>(highlightColor);
-  const [isHighlightMenuOpen, setIsHighlightMenuOpen] = useState(false);
-  // const [isTextBlockMenuOpen, setIsTextBlockMenuOpen] =
-  useState<boolean>(false);
-  const [isFontSizeMenuOpen, setIsFontSizeMenuOpen] = useState(false);
-  const [isFontFamilyMenuOpen, setIsFontFamilyMenuOpen] = useState(false);
-  const [isYoutubeDialogOpen, setIsYoutubeDialogOpen] = useState(false);
-  const [youtubeUrl, setYoutubeUrl] = useState("");
-  const [youtubeWidth, setYoutubeWidth] = useState(640);
-  const [youtubeHeight, setYoutubeHeight] = useState(480);
-  const [youtubeFullWidth, setYoutubeFullWidth] = useState(false);
-  const [isTextColorMenuOpen, setIsTextColorMenuOpen] = useState(false);
-  const [customTextColor, setCustomTextColor] = useState<string>("#111827");
-  const [customTextColorInput, setCustomTextColorInput] =
-    useState<string>("#111827");
-  const [isAlignMenuOpen, setIsAlignMenuOpen] = useState(false);
-  const [isTextBlockMenuOpen, setIsTextBlockMenuOpen] =
-    useState<boolean>(false);
+  const { uiState, actions } = useMenubarUiState(highlightColor);
+  const {
+    isLinkDialogOpen,
+    linkUrl,
+    isImageDialogOpen,
+    imageUrl,
+    imageAlt,
+    imageTitle,
+    isInsertTableDialogOpen,
+    tableRows,
+    tableCols,
+    tableWithHeaderRow,
+    customHighlightColor,
+    isHighlightMenuOpen,
+    isFontSizeMenuOpen,
+    isFontFamilyMenuOpen,
+    isYoutubeDialogOpen,
+    youtubeUrl,
+    youtubeWidth,
+    youtubeHeight,
+    youtubeFullWidth,
+    isTextColorMenuOpen,
+    customTextColor,
+    customTextColorInput,
+    isAlignMenuOpen,
+    isTextBlockMenuOpen,
+  } = uiState;
+  const {
+    openYoutubeDialog: setYoutubeDialogState,
+    resetTableDialog,
+    setIsLinkDialogOpen,
+    setLinkUrl,
+    setIsImageDialogOpen,
+    setImageUrl,
+    setImageAlt,
+    setImageTitle,
+    setIsInsertTableDialogOpen,
+    setTableRows,
+    setTableCols,
+    setTableWithHeaderRow,
+    setCustomHighlightColor,
+    setIsHighlightMenuOpen,
+    setIsFontSizeMenuOpen,
+    setIsFontFamilyMenuOpen,
+    setIsYoutubeDialogOpen,
+    setYoutubeUrl,
+    setYoutubeWidth,
+    setYoutubeHeight,
+    setYoutubeFullWidth,
+    setIsTextColorMenuOpen,
+    setCustomTextColor,
+    setCustomTextColorInput,
+    setIsAlignMenuOpen,
+    setIsTextBlockMenuOpen,
+  } = actions;
 
   //* EDITOR STATE
   const editorState = useEditorState({
@@ -278,38 +261,48 @@ export default function Menubar({
     },
   });
 
-  const textBlocks = [
-    {
-      label: "Heading 1",
-      level: 1,
-      state: editorState.isHeading1,
-    },
-    {
-      label: "Heading 2",
-      level: 2,
-      state: editorState.isHeading2,
-    },
-    {
-      label: "Heading 3",
-      level: 3,
-      state: editorState.isHeading3,
-    },
-    {
-      label: "Heading 4",
-      level: 4,
-      state: editorState.isHeading4,
-    },
-    {
-      label: "Heading 5",
-      level: 5,
-      state: editorState.isHeading5,
-    },
-    {
-      label: "Heading 6",
-      level: 6,
-      state: editorState.isHeading6,
-    },
-  ];
+  const textBlocks = useMemo(
+    () => [
+      {
+        label: "Heading 1",
+        level: 1,
+        state: editorState.isHeading1,
+      },
+      {
+        label: "Heading 2",
+        level: 2,
+        state: editorState.isHeading2,
+      },
+      {
+        label: "Heading 3",
+        level: 3,
+        state: editorState.isHeading3,
+      },
+      {
+        label: "Heading 4",
+        level: 4,
+        state: editorState.isHeading4,
+      },
+      {
+        label: "Heading 5",
+        level: 5,
+        state: editorState.isHeading5,
+      },
+      {
+        label: "Heading 6",
+        level: 6,
+        state: editorState.isHeading6,
+      },
+    ],
+    [
+      editorState.isHeading1,
+      editorState.isHeading2,
+      editorState.isHeading3,
+      editorState.isHeading4,
+      editorState.isHeading5,
+      editorState.isHeading6,
+    ],
+  );
 
   //* HANDLE LINK FUNCTIONS
   const handleLinkClick = () => {
@@ -422,18 +415,20 @@ export default function Menubar({
       };
       const isFullWidth = String(youtubeAttributes.width) === "100%";
 
-      setYoutubeUrl(youtubeAttributes.src ?? "");
-      setYoutubeWidth(toDimension(youtubeAttributes.width, 640));
-      setYoutubeHeight(toDimension(youtubeAttributes.height, 480));
-      setYoutubeFullWidth(isFullWidth);
+      setYoutubeDialogState({
+        url: youtubeAttributes.src ?? "",
+        width: toDimension(youtubeAttributes.width, 640),
+        height: toDimension(youtubeAttributes.height, 480),
+        fullWidth: isFullWidth,
+      });
     } else {
-      setYoutubeUrl("");
-      setYoutubeWidth(640);
-      setYoutubeHeight(480);
-      setYoutubeFullWidth(false);
+      setYoutubeDialogState({
+        url: "",
+        width: 640,
+        height: 480,
+        fullWidth: false,
+      });
     }
-
-    setIsYoutubeDialogOpen(true);
   };
 
   const handleSubmitYoutube = () => {
@@ -591,41 +586,21 @@ export default function Menubar({
       : highlightColor;
 
   // //* HANDLE TEXTBLOCK
-  // const textBlockState: Record<TextBlockKey, boolean> = {
-  //   paragraph: editorState.isParagraph,
-  //   heading1: editorState.isHeading1,
-  //   heading2: editorState.isHeading2,
-  //   heading3: editorState.isHeading3,
-  //   heading4: editorState.isHeading4,
-  //   heading5: editorState.isHeading5,
-  //   heading6: editorState.isHeading6,
-  // };
+  const activeFontSize = useMemo(
+    () =>
+      FONT_SIZE_OPTIONS.find(
+        (option) => option.value === editorState.fontSize,
+      ) ?? FONT_SIZE_OPTIONS[0],
+    [editorState.fontSize],
+  );
 
-  // const activeTextBlock =
-  //   TEXT_BLOCK_OPTIONS.find((option) => textBlockState[option.key]) ??
-  //   TEXT_BLOCK_OPTIONS[0];
-
-  const activeFontSize =
-    FONT_SIZE_OPTIONS.find((option) => option.value === editorState.fontSize) ??
-    FONT_SIZE_OPTIONS[0];
-
-  const activeFontFamily =
-    FONT_FAMILY_OPTIONS.find(
-      (option) => option.value === editorState.fontFamily,
-    ) ?? FONT_FAMILY_OPTIONS[0];
-
-  // Applies the selected text block command and closes the dropdown after updating the editor selection.
-  // const applyTextBlock = (option: (typeof TEXT_BLOCK_OPTIONS)[number]) => {
-  //   const chain = editor.chain().focus();
-
-  //   if (option.key === "paragraph") {
-  //     chain.setParagraph().run();
-  //   } else {
-  //     chain.toggleHeading({ level: option.level }).run();
-  //   }
-
-  //   setIsTextBlockMenuOpen(false);
-  // };
+  const activeFontFamily = useMemo(
+    () =>
+      FONT_FAMILY_OPTIONS.find(
+        (option) => option.value === editorState.fontFamily,
+      ) ?? FONT_FAMILY_OPTIONS[0],
+    [editorState.fontFamily],
+  );
 
   //* Applies the selected font size to the current selection, or clears it when "Default" is chosen.
   const applyFontSize = (fontSize: string | null) => {
@@ -712,7 +687,7 @@ export default function Menubar({
 
   return (
     <>
-      <div className="bg-gray-100 p-2 rounded-t-sm border border-b-0 dark:bg-[#171717] flex gap-2.5 flex-wrap">
+      <div className="bg-muted p-2 rounded-t-sm border border-b-0 flex gap-2.5 flex-wrap">
         {/* ── GROUP 1: HISTORY ── */}
         <div className="flex items-center gap-1">
           <MenuBottons
@@ -732,36 +707,6 @@ export default function Menubar({
           <Separator orientation="vertical" />
         </div>
 
-        {/* ── GROUP 2: BLOCK TYPE (Paragraph / Headings) ── */}
-        {/* <div className="flex items-center gap-1">
-          <DropdownMenu
-            open={isTextBlockMenuOpen}
-            onOpenChange={setIsTextBlockMenuOpen}
-          >
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                className="cursor-pointer text-gray-800 dark:text-white"
-              >
-                {activeTextBlock.label}
-                <ChevronDown />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="max-h-60 px-0 py-0 overflow-hidden">
-              {TEXT_BLOCK_OPTIONS.map((option) => (
-                <TextBlockButton
-                  key={option.key}
-                  label={option.label}
-                  onClick={() => applyTextBlock(option)}
-                  state={textBlockState[option.key]}
-                  title={option.title}
-                />
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <Separator orientation="vertical" className="ml-1" />
-        </div> */}
-
         {/* ── GROUP 3: TYPOGRAPHY (Font Family + Font Size + Headings) ── */}
         <div className="flex items-center gap-1">
           <DropdownMenu
@@ -771,7 +716,7 @@ export default function Menubar({
             <DropdownMenuTrigger asChild>
               <Button
                 variant="outline"
-                className="cursor-pointer text-gray-800 dark:text-white"
+                className="cursor-pointer text-foreground"
               >
                 {editorState.isHeading1 && <HeadingsIcon label="1" />}
 
@@ -821,7 +766,7 @@ export default function Menubar({
             <DropdownMenuTrigger asChild>
               <Button
                 variant="outline"
-                className="min-w-28 cursor-pointer text-gray-800 dark:text-white"
+                className="min-w-28 cursor-pointer text-foreground"
               >
                 {activeFontFamily.label}
                 <ChevronDown />
@@ -847,7 +792,7 @@ export default function Menubar({
             <DropdownMenuTrigger asChild>
               <Button
                 variant="outline"
-                className="min-w-20 cursor-pointer text-gray-800 dark:text-white"
+                className="min-w-20 cursor-pointer text-foreground"
               >
                 {activeFontSize.label}
                 <ChevronDown />
@@ -920,8 +865,8 @@ export default function Menubar({
                 className={cn(
                   "size-4",
                   editorState.textColor
-                    ? "text-white dark:text-black"
-                    : "text-black dark:text-white",
+                    ? "text-primary-foreground"
+                    : "text-foreground",
                 )}
               />
               <span
@@ -943,7 +888,7 @@ export default function Menubar({
                   variant="ghost"
                   className="cursor-pointer rounded-l-none border-0 border-l border-border/50 bg-transparent px-1.5"
                 >
-                  <ChevronDown className="size-3.5 text-black dark:text-white" />
+                  <ChevronDown className="size-3.5 text-foreground" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent
@@ -1020,8 +965,8 @@ export default function Menubar({
                 className={cn(
                   "size-4",
                   editorState.isHighlight
-                    ? "text-white dark:text-black"
-                    : "text-black dark:text-white",
+                    ? "text-primary-foreground"
+                    : "text-foreground",
                 )}
               />
               <span
@@ -1043,7 +988,7 @@ export default function Menubar({
                   variant="ghost"
                   className="cursor-pointer rounded-l-none border-0 border-l border-border/50 bg-transparent px-1.5"
                 >
-                  <ChevronDown className="size-3.5 text-black dark:text-white" />
+                  <ChevronDown className="size-3.5 text-foreground" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent
@@ -1163,8 +1108,7 @@ export default function Menubar({
                   // size="icon"
                   className={cn(
                     "cursor-pointer bg-transparent",
-                    isAnyAlignActive &&
-                      "bg-gray-800 text-white dark:bg-white dark:text-gray-800",
+                    isAnyAlignActive && "bg-primary text-primary-foreground",
                   )}
                 >
                   <ActiveAlignIcon className={cn("size-4")} />
@@ -1269,12 +1213,7 @@ export default function Menubar({
         {/* ── GROUP 10: INSERT (Table, Image, YouTube) ── */}
         <div className="flex items-center gap-1">
           <MenuBottons
-            onClick={() => {
-              setTableRows(3);
-              setTableCols(3);
-              setTableWithHeaderRow(true);
-              setIsInsertTableDialogOpen(true);
-            }}
+            onClick={resetTableDialog}
             state={editorState.isTable}
             Icon={Table2}
             title="Insert table"
@@ -1622,16 +1561,14 @@ function MenuBottons({
       className={cn(
         "cursor-pointer bg-transparent",
         className,
-        state && "bg-foreground",
+        state && "bg-primary",
       )}
       {...props}
     >
       <Icon
         className={cn(
           "size-4",
-          state
-            ? "text-white dark:text-gray-800"
-            : "text-gray-800 dark:text-white",
+          state ? "text-primary-foreground" : "text-foreground",
         )}
       />
     </Button>
@@ -1658,8 +1595,8 @@ function TextBlockButton({
       className={cn(
         "w-full rounded-none text-sm cursor-pointer",
         state
-          ? "bg-gray-800 text-white dark:bg-white dark:text-gray-800"
-          : "bg-transparent text-gray-800 dark:text-white",
+          ? "bg-primary text-primary-foreground"
+          : "bg-transparent text-foreground",
         !state && "hover:bg-foreground/5",
       )}
     >

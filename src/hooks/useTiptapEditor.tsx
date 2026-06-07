@@ -258,6 +258,7 @@ export const extensions = [
       return [
         "div",
         {
+          "data-tiptap-image-wrapper": "",
           style: `display: flex; justify-content: ${justifyContent}; width: 100%;`,
         },
         [
@@ -268,7 +269,7 @@ export const extensions = [
             width: node.attrs.width,
             height: node.attrs.height,
             style:
-              "max-width: 100%; height: auto; display: block; border-radius: 6px; margin-top: 32px; margin-bottom: 32px",
+              "max-width: 100%; height: auto; display: block; border-radius: 6px",
           },
         ],
       ];
@@ -322,7 +323,7 @@ export default function useTiptapEditor({
     editorProps: {
       attributes: {
         class: cn(
-          "tiptap text-base min-h-50 max-h-[60vh] overflow-y-auto",
+          "tiptap text-left text-base min-h-50 max-h-[60vh] overflow-y-auto",
           !isPreview && "px-6 py-8 border focus:outline-0",
           className,
         ),
