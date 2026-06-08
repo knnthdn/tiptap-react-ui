@@ -34,8 +34,10 @@ export default function RichtextEditor({
   editor,
   onSave,
   enablePreview = false,
+  enableTableOfContents = false,
+  tableOfContentsPosition = "right",
   enableWordCount = true,
-  immediatelyRenderPreview = true,
+  immediatelyRenderPreview = false,
   enableModeToggle = false,
   mode = "light",
   theme = "default",
@@ -90,6 +92,8 @@ export default function RichtextEditor({
         editor={editor}
         enableModeToggle={enableModeToggle}
         enablePreview={enablePreview}
+        enableTableOfContents={enableTableOfContents}
+        tableOfContentsPosition={tableOfContentsPosition}
         enableWordCount={enableWordCount}
         highlightColor={highlightColor}
         immediatelyRenderPreview={immediatelyRenderPreview}
@@ -111,6 +115,10 @@ type RichTextEditorContentProps = {
   editor: NonNullable<RichTextEditorProps["editor"]>;
   enableModeToggle: boolean;
   enablePreview: boolean;
+  enableTableOfContents: boolean;
+  tableOfContentsPosition: NonNullable<
+    RichTextEditorProps["tableOfContentsPosition"]
+  >;
   enableWordCount: boolean;
   hasOnSave: boolean;
   highlightColor: string;
@@ -129,6 +137,8 @@ function RichTextEditorContent({
   editor,
   enableModeToggle,
   enablePreview,
+  enableTableOfContents,
+  tableOfContentsPosition,
   enableWordCount,
   hasOnSave,
   highlightColor,
@@ -293,6 +303,8 @@ function RichTextEditorContent({
               activePreview={activePreview}
               onSetActivePreview={onSetActivePreview}
               editor={editor}
+              enableTableOfContents={enableTableOfContents}
+              tableOfContentsPosition={tableOfContentsPosition}
             />
           </TabsContent>
         )}

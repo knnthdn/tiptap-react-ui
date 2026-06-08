@@ -687,9 +687,9 @@ export default function Menubar({
 
   return (
     <>
-      <div className="bg-muted p-2 rounded-t-sm border border-b-0 flex gap-2.5 flex-wrap">
+      <div className="flex w-full flex-wrap gap-1.5 rounded-t-sm border border-b-0 bg-muted p-1.5 sm:gap-2.5 sm:p-2">
         {/* ── GROUP 1: HISTORY ── */}
-        <div className="flex items-center gap-1">
+        <div className="flex shrink-0 items-center gap-1">
           <MenuBottons
             onClick={() => editor.chain().focus().undo().run()}
             state={false}
@@ -708,7 +708,7 @@ export default function Menubar({
         </div>
 
         {/* ── GROUP 3: TYPOGRAPHY (Font Family + Font Size + Headings) ── */}
-        <div className="flex items-center gap-1">
+        <div className="flex shrink-0 items-center gap-1">
           <DropdownMenu
             open={isTextBlockMenuOpen}
             onOpenChange={setIsTextBlockMenuOpen}
@@ -716,7 +716,7 @@ export default function Menubar({
             <DropdownMenuTrigger asChild>
               <Button
                 variant="outline"
-                className="cursor-pointer text-foreground"
+                className="h-7 cursor-pointer px-2 text-foreground sm:h-8"
               >
                 {editorState.isHeading1 && <HeadingsIcon label="1" />}
 
@@ -766,7 +766,7 @@ export default function Menubar({
             <DropdownMenuTrigger asChild>
               <Button
                 variant="outline"
-                className="min-w-28 cursor-pointer text-foreground"
+                className="h-7 min-w-24 cursor-pointer px-2 text-foreground sm:h-8 sm:min-w-28"
               >
                 {activeFontFamily.label}
                 <ChevronDown />
@@ -792,7 +792,7 @@ export default function Menubar({
             <DropdownMenuTrigger asChild>
               <Button
                 variant="outline"
-                className="min-w-20 cursor-pointer text-foreground"
+                className="h-7 min-w-16 cursor-pointer px-2 text-foreground sm:h-8 sm:min-w-20"
               >
                 {activeFontSize.label}
                 <ChevronDown />
@@ -814,7 +814,7 @@ export default function Menubar({
         </div>
 
         {/* ── GROUP 4: INLINE FORMATTING (Bold, Italic, Underline, Strikethrough) ── */}
-        <div className="flex items-center gap-1">
+        <div className="flex shrink-0 items-center gap-1">
           <MenuBottons
             onClick={() => editor.chain().focus().toggleBold().run()}
             state={editorState.isBold}
@@ -843,7 +843,7 @@ export default function Menubar({
         </div>
 
         {/* ── GROUP 5: TEXT COLOR & HIGHLIGHT ── */}
-        <div className="flex items-center gap-1">
+        <div className="flex shrink-0 items-center gap-1">
           {/* TEXT COLOR */}
           <div
             className={cn(
@@ -856,7 +856,7 @@ export default function Menubar({
               size="icon"
               onClick={toggleTextColor}
               className={cn(
-                "relative cursor-pointer rounded-r-none border-0 bg-transparent px-2",
+                "relative size-7 cursor-pointer rounded-r-none border-0 bg-transparent px-2 sm:size-8",
                 editorState.textColor && "bg-foreground shadow-xs",
               )}
               data-active={!!editorState.textColor}
@@ -886,7 +886,7 @@ export default function Menubar({
                   title="Choose text color"
                   size="icon"
                   variant="ghost"
-                  className="cursor-pointer rounded-l-none border-0 border-l border-border/50 bg-transparent px-1.5"
+                  className="size-7 cursor-pointer rounded-l-none border-0 border-l border-border/50 bg-transparent px-1.5 sm:size-8"
                 >
                   <ChevronDown className="size-3.5 text-foreground" />
                 </Button>
@@ -956,7 +956,7 @@ export default function Menubar({
               size="icon"
               onClick={() => applyHighlightColor(currentHighlightColor)}
               className={cn(
-                "relative cursor-pointer rounded-r-none border-0 bg-transparent px-2",
+                "relative size-7 cursor-pointer rounded-r-none border-0 bg-transparent px-2 sm:size-8",
                 editorState.isHighlight && "bg-foreground shadow-xs",
               )}
               data-active={editorState.isHighlight}
@@ -986,7 +986,7 @@ export default function Menubar({
                   title="Choose highlight color"
                   size="icon"
                   variant="ghost"
-                  className="cursor-pointer rounded-l-none border-0 border-l border-border/50 bg-transparent px-1.5"
+                  className="size-7 cursor-pointer rounded-l-none border-0 border-l border-border/50 bg-transparent px-1.5 sm:size-8"
                 >
                   <ChevronDown className="size-3.5 text-foreground" />
                 </Button>
@@ -1041,7 +1041,7 @@ export default function Menubar({
         </div>
 
         {/* ── GROUP 6: LINK & INLINE CODE ── */}
-        <div className="flex items-center gap-1">
+        <div className="flex shrink-0 items-center gap-1">
           <MenuBottons
             onClick={handleLinkClick}
             state={editorState.isLink}
@@ -1058,9 +1058,9 @@ export default function Menubar({
         </div>
 
         {/* ── GROUP 7: TEXT ALIGNMENT ── */}
-        <div className="flex items-center gap-1">
+        <div className="flex shrink-0 items-center gap-1">
           {/* Desktop: individual buttons */}
-          <div className="hidden md:flex items-center gap-1">
+          <div className="hidden shrink-0 items-center gap-1 md:flex">
             <MenuBottons
               onClick={() =>
                 editor.chain().focus().toggleTextAlign("left").run()
@@ -1096,7 +1096,7 @@ export default function Menubar({
           </div>
 
           {/* Mobile: dropdown */}
-          <div className="flex md:hidden items-center gap-1">
+          <div className="flex shrink-0 items-center gap-1 md:hidden">
             <DropdownMenu
               open={isAlignMenuOpen}
               onOpenChange={setIsAlignMenuOpen}
@@ -1107,7 +1107,7 @@ export default function Menubar({
                   variant="outline"
                   // size="icon"
                   className={cn(
-                    "cursor-pointer bg-transparent",
+                    "h-7 cursor-pointer bg-transparent px-2 sm:h-8",
                     isAnyAlignActive && "bg-primary text-primary-foreground",
                   )}
                 >
@@ -1159,7 +1159,7 @@ export default function Menubar({
         </div>
 
         {/* ── GROUP 8: LISTS ── */}
-        <div className="flex items-center gap-1">
+        <div className="flex shrink-0 items-center gap-1">
           <MenuBottons
             onClick={() => editor.chain().focus().toggleBulletList().run()}
             state={editorState.isBulletList}
@@ -1182,7 +1182,7 @@ export default function Menubar({
         </div>
 
         {/* ── GROUP 9: BLOCK ELEMENTS ── */}
-        <div className="flex items-center gap-1">
+        <div className="flex shrink-0 items-center gap-1">
           <MenuBottons
             onClick={() => editor.chain().focus().toggleBlockquote().run()}
             state={editorState.isQuote}
@@ -1211,7 +1211,7 @@ export default function Menubar({
         </div>
 
         {/* ── GROUP 10: INSERT (Table, Image, YouTube) ── */}
-        <div className="flex items-center gap-1">
+        <div className="flex shrink-0 items-center gap-1">
           <MenuBottons
             onClick={resetTableDialog}
             state={editorState.isTable}
@@ -1228,9 +1228,10 @@ export default function Menubar({
 
           <ImageUploadButton
             editor={editor}
-            text="Upload image"
+            text=""
             hideWhenUnavailable={true}
             onInserted={() => console.log("Image inserted!")}
+            className="size-7 px-0 sm:size-8"
           />
 
           <MenuBottons
@@ -1242,7 +1243,7 @@ export default function Menubar({
         </div>
 
         {hasOnSave && (
-          <div className="flex items-center gap-1">
+          <div className="flex shrink-0 items-center gap-1">
             <Separator orientation="vertical" />
 
             <MenuBottons
@@ -1559,7 +1560,7 @@ function MenuBottons({
       onClick={onClick}
       size="icon"
       className={cn(
-        "cursor-pointer bg-transparent",
+        "size-7 cursor-pointer bg-transparent sm:size-8",
         className,
         state && "bg-primary",
       )}

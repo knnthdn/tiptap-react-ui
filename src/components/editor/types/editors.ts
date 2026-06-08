@@ -1,4 +1,5 @@
 import { Editor, HTMLContent, JSONContent } from "@tiptap/core";
+import type { TableOfContentsOptions } from "@tiptap/extension-table-of-contents";
 import { UseEditorOptions } from "@tiptap/react";
 
 //* useTiptapEditor hooks
@@ -80,6 +81,23 @@ export type TiptapEditorProps = {
   };
 
   /**
+   * Optional Tiptap Table of Contents configuration.
+   *
+   * The extension is not registered unless this option is provided.
+   */
+  tableOfContents?: TableOfContentsOptions;
+
+  /**
+   * Controls whether the editor should render immediately on initialization.
+   *
+   * Defaults to `false` to reduce SSR hydration mismatch risk. Pass `true`
+   * when immediate client-side rendering is required.
+   *
+   * @default false
+   */
+  immediatelyRender?: UseEditorOptions["immediatelyRender"];
+
+  /**
    * Class applied to the ProseMirror editor element.
    *
    * Default behavior:
@@ -111,6 +129,8 @@ export const RICH_TEXT_EDITOR_THEMES = [
 export type RichTextEditorTheme = (typeof RICH_TEXT_EDITOR_THEMES)[number];
 
 export type RichTextEditorMode = "light" | "dark" | "system";
+
+export type TableOfContentsPosition = "left" | "right";
 
 //* useTiptapEditor hooks return types
 
@@ -165,6 +185,23 @@ export type RichTextEditorProps = {
   enablePreview?: boolean;
 
   /**
+   * Shows a generated table of contents in the JSON preview.
+   *
+   * `RenderHTML` and `editor.getHTML()` do not include a live TOC because the
+   * TOC is generated from the editor state, not serialized as document content.
+   *
+   * @default false
+   */
+  enableTableOfContents?: boolean;
+
+  /**
+   * Controls which side the preview TOC appears on.
+   *
+   * @default "right"
+   */
+  tableOfContentsPosition?: TableOfContentsPosition;
+
+  /**
    * Enables the editor word count and character count display.
    *
    * When enabled, the editor footer will show:
@@ -179,10 +216,10 @@ export type RichTextEditorProps = {
    * Controls whether the preview should render immediately.
    *
    * In SSR environments like Next.js, if `enablePreview`
-   * is enabled, setting this to `false` can help prevent
-   * hydration mismatch issues during initial render.
+   * is enabled, keeping this `false` can help prevent hydration
+   * mismatch issues during initial render.
    *
-   * @default true
+   * @default false
    */
   immediatelyRenderPreview?: boolean;
 
@@ -262,7 +299,7 @@ export type RenderJSONProps = {
    * Useful for SSR environments (e.g. Next.js) to prevent hydration
    * mismatch or to delay rendering until client-side mount.
    *
-   * @default true
+   * @default false
    */
   immediatelyRender?: boolean;
 
@@ -305,6 +342,23 @@ export type RenderJSONProps = {
    * @internal
    */
   _height?: number;
+
+  /**
+   * Shows a generated table of contents beside rendered JSON content.
+   *
+   * `RenderHTML` output is intentionally not supported because raw serialized
+   * HTML does not include the live Tiptap TOC state.
+   *
+   * @default false
+   */
+  enableTableOfContents?: boolean;
+
+  /**
+   * Controls which side the rendered JSON TOC appears on.
+   *
+   * @default "right"
+   */
+  tableOfContentsPosition?: TableOfContentsPosition;
 };
 
 //* RenderHTML Component

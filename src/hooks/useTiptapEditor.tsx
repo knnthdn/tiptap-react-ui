@@ -13,6 +13,7 @@ import TextAlign from "@tiptap/extension-text-align";
 import { TaskList, TaskItem } from "@tiptap/extension-list";
 import Youtube from "@tiptap/extension-youtube";
 import Image from "@tiptap/extension-image";
+import TableOfContents from "@tiptap/extension-table-of-contents";
 
 //* CUSTOM IMPORTS
 import { NotionTableExtensions } from "../components/editor/notion-table";
@@ -310,7 +311,9 @@ export const extensions = [
 export default function useTiptapEditor({
   isPreview = false,
   handleImageUpload,
+  tableOfContents,
   className,
+  immediatelyRender = false,
   ...options
 }: TiptapEditorProps = {}): TiptapEditorReturnTypes {
   const {
@@ -333,6 +336,7 @@ export default function useTiptapEditor({
 
     extensions: [
       ...extensions,
+      ...(tableOfContents ? [TableOfContents.configure(tableOfContents)] : []),
       ImageUploadNode.configure({
         accept: "image/*",
         maxSize: maxLimit * 1024 * 1024,
@@ -342,6 +346,7 @@ export default function useTiptapEditor({
       }),
     ],
 
+    immediatelyRender,
     ...options,
   });
 
