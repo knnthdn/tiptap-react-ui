@@ -1,25 +1,34 @@
+// import NotionEditor from "./components/editor/NotionEditor";
 import RichTextEditor from "./components/editor/Tiptap";
 
 import useTiptapEditor from "./hooks/useTiptapEditor";
 
 export default function App() {
   const { editor } = useTiptapEditor({
+    placeholder: "Write, type '/' for commands",
     className: "min-h-full",
-    handleImageUpload: {
-      maxLimit: 10,
-    },
   });
+
+  //TODO: In table action i want you to add a style in toggle for example column is already toggled or cell is toggled something like that
+
+  //TODO" My lib is overriding something in my consumer style i found it when i try to install shadcn sidebar the sidebar is not opening i when i try to import "tiptap-react-ui/style.css" in nextjs layout.tsx but when i import it in app level it works and when i import global.css before tiptap-react-ui/style.css it doesnt work
 
   return (
     <>
       <RichTextEditor
         editor={editor}
         enablePreview={true}
-        className="max-w-5xl mx-auto space-y-1 py-5 h-screen "
-        theme="violet"
+        className="max-w-5xl mx-auto h-screen py-5"
         enableTableOfContents
         tableOfContentsPosition="right"
+        theme="violet"
+        mode="dark"
       />
+
+      {/* <NotionEditor
+        editor={editor}
+        className="max-w-5xl mx-auto space-y-1 py-5"
+      /> */}
 
       {/* <div className="py-5 max-w-7xl mx-auto">
         <RenderJSON

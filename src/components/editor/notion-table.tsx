@@ -8,7 +8,9 @@ import {
   TableRow,
   createTable,
 } from "@tiptap/extension-table";
+import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
 import { TextSelection } from "@tiptap/pm/state";
+import { TableMap, findTable, selectionCell } from "@tiptap/pm/tables";
 
 import {
   NodeViewContent,
@@ -17,7 +19,19 @@ import {
   type NodeViewProps,
 } from "@tiptap/react";
 
-import { ChevronDown, Minus, Plus, Table2, Trash2 } from "lucide-react";
+import {
+  ChevronDown,
+  MoveLeft,
+  MoveRight,
+  PanelLeft,
+  PanelTop,
+  SquareDashedTopSolid,
+  SquareMinus,
+  TableColumnsSplit,
+  TableRowsSplit,
+  Trash2,
+  type LucideIcon,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 
 import {
@@ -32,61 +46,189 @@ import { cn } from "../../lib/utils";
 
 type TableAction = {
   label: string;
-  icon: typeof Plus;
+  icon: LucideIcon;
   run: (editor: Editor) => boolean;
   destructive?: boolean;
 };
 
+type ColumnSwap = {
+  sourceNode: ProseMirrorNode;
+  sourcePos: number;
+  targetNode: ProseMirrorNode;
+  targetPos: number;
+};
+
+function swapCurrentColumn(editor: Editor, direction: -1 | 1) {
+  const { state, view } = editor;
+
+  if (!editor.can().focus()) return false;
+
+  const $cell = selectionCell(state);
+  const table = findTable($cell);
+
+  if (!table) return false;
+
+  const tableMap = TableMap.get(table.node);
+  const currentCellRect = tableMap.findCell($cell.pos - table.start);
+  const sourceColumn = currentCellRect.left;
+  const targetColumn = sourceColumn + direction;
+
+  if (targetColumn < 0 || targetColumn >= tableMap.width) {
+    return false;
+  }
+
+  const swaps: ColumnSwap[] = [];
+
+  for (let row = 0; row < tableMap.height; row += 1) {
+    const sourceCellOffset = tableMap.map[row * tableMap.width + sourceColumn];
+    const targetCellOffset = tableMap.map[row * tableMap.width + targetColumn];
+
+    if (sourceCellOffset === targetCellOffset) {
+      return false;
+    }
+
+    const sourceRect = tableMap.findCell(sourceCellOffset);
+    const targetRect = tableMap.findCell(targetCellOffset);
+
+    if (
+      sourceRect.left !== sourceColumn ||
+      sourceRect.right !== sourceColumn + 1 ||
+      targetRect.left !== targetColumn ||
+      targetRect.right !== targetColumn + 1
+    ) {
+      return false;
+    }
+
+    const sourcePos = table.start + sourceCellOffset;
+    const targetPos = table.start + targetCellOffset;
+    const sourceNode = table.node.nodeAt(sourceCellOffset);
+    const targetNode = table.node.nodeAt(targetCellOffset);
+
+    if (!sourceNode || !targetNode) {
+      return false;
+    }
+
+    swaps.push({
+      sourceNode,
+      sourcePos,
+      targetNode,
+      targetPos,
+    });
+  }
+
+  const tr = state.tr;
+
+  swaps
+    .sort(
+      (left, right) =>
+        Math.max(right.sourcePos, right.targetPos) -
+        Math.max(left.sourcePos, left.targetPos),
+    )
+    .forEach(({ sourceNode, sourcePos, targetNode, targetPos }) => {
+      const replacements =
+        sourcePos > targetPos
+          ? [
+              {
+                newNode: targetNode,
+                oldNode: sourceNode,
+                pos: sourcePos,
+              },
+              {
+                newNode: sourceNode,
+                oldNode: targetNode,
+                pos: targetPos,
+              },
+            ]
+          : [
+              {
+                newNode: sourceNode,
+                oldNode: targetNode,
+                pos: targetPos,
+              },
+              {
+                newNode: targetNode,
+                oldNode: sourceNode,
+                pos: sourcePos,
+              },
+            ];
+
+      replacements.forEach(({ newNode, oldNode, pos }) => {
+        tr.replaceWith(pos, pos + oldNode.nodeSize, newNode);
+      });
+    });
+
+  view.dispatch(tr.scrollIntoView());
+  view.focus();
+
+  return true;
+}
+
 const insertionActions: TableAction[] = [
   {
-    label: "Add row above",
-    icon: Plus,
+    label: "Insert row above",
+    icon: TableRowsSplit,
     run: (editor) => editor.chain().focus().addRowBefore().run(),
   },
   {
-    label: "Add row below",
-    icon: Plus,
+    label: "Insert row below",
+    icon: TableRowsSplit,
     run: (editor) => editor.chain().focus().addRowAfter().run(),
   },
+];
+
+const columnInsertionActions: TableAction[] = [
   {
-    label: "Add column before",
-    icon: Plus,
+    label: "Insert column left",
+    icon: TableColumnsSplit,
     run: (editor) => editor.chain().focus().addColumnBefore().run(),
   },
   {
-    label: "Add column after",
-    icon: Plus,
+    label: "Insert column right",
+    icon: TableColumnsSplit,
     run: (editor) => editor.chain().focus().addColumnAfter().run(),
   },
 ];
 
 const removalActions: TableAction[] = [
   {
-    label: "Remove row",
-    icon: Minus,
+    label: "Delete row",
+    icon: SquareMinus,
     run: (editor) => editor.chain().focus().deleteRow().run(),
   },
   {
-    label: "Remove column",
-    icon: Minus,
+    label: "Delete column",
+    icon: SquareMinus,
     run: (editor) => editor.chain().focus().deleteColumn().run(),
+  },
+];
+
+const moveActions: TableAction[] = [
+  {
+    label: "Move column left",
+    icon: MoveLeft,
+    run: (editor) => swapCurrentColumn(editor, -1),
+  },
+  {
+    label: "Move column right",
+    icon: MoveRight,
+    run: (editor) => swapCurrentColumn(editor, 1),
   },
 ];
 
 const headerActions: TableAction[] = [
   {
-    label: "Toggle header row",
-    icon: Table2,
+    label: "Header row",
+    icon: PanelTop,
     run: (editor) => editor.chain().focus().toggleHeaderRow().run(),
   },
   {
-    label: "Toggle header column",
-    icon: Table2,
+    label: "Header column",
+    icon: PanelLeft,
     run: (editor) => editor.chain().focus().toggleHeaderColumn().run(),
   },
   {
-    label: "Toggle header cell",
-    icon: Table2,
+    label: "Header cell",
+    icon: SquareDashedTopSolid,
     run: (editor) => editor.chain().focus().toggleHeaderCell().run(),
   },
 ];
@@ -112,6 +254,11 @@ function TableActionItem({
   return (
     <DropdownMenuItem
       variant={action.destructive ? "destructive" : "default"}
+      className={cn(
+        "notion-table-action-item cursor-pointer",
+        action.destructive &&
+          "text-red-700 focus:bg-red-700/10 focus:text-red-700 data-[variant=destructive]:text-red-700 data-[variant=destructive]:focus:text-red-700 dark:text-red-700 dark:focus:bg-red-700/20 dark:focus:text-red-600",
+      )}
       onSelect={(event) => {
         event.preventDefault();
         action.run(editor);
@@ -125,6 +272,9 @@ function TableActionItem({
 
 function TableCellNodeView({ editor, node, getPos, selected }: NodeViewProps) {
   const [isCurrentCellActive, setIsCurrentCellActive] = useState(false);
+  const isDarkTable =
+    typeof editor.view.dom.closest === "function" &&
+    !!editor.view.dom.closest(".dark");
 
   useEffect(() => {
     const updateCellActivity = () => {
@@ -172,24 +322,16 @@ function TableCellNodeView({ editor, node, getPos, selected }: NodeViewProps) {
                 <ChevronDown className="size-3.5" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>Table actions</DropdownMenuLabel>
-              {insertionActions.map((action) => (
-                <TableActionItem
-                  key={action.label}
-                  action={action}
-                  editor={editor}
-                />
-              ))}
-              <DropdownMenuSeparator />
-              {removalActions.map((action) => (
-                <TableActionItem
-                  key={action.label}
-                  action={action}
-                  editor={editor}
-                />
-              ))}
-              <DropdownMenuSeparator />
+            <DropdownMenuContent
+              align="end"
+              className={cn(
+                "notion-table-actions-menu w-56",
+                isDarkTable && "notion-table-actions-menu-dark",
+              )}
+            >
+              <DropdownMenuLabel className="notion-table-actions-label">
+                Table actions
+              </DropdownMenuLabel>
               {headerActions.map((action) => (
                 <TableActionItem
                   key={action.label}
@@ -197,7 +339,39 @@ function TableCellNodeView({ editor, node, getPos, selected }: NodeViewProps) {
                   editor={editor}
                 />
               ))}
-              <DropdownMenuSeparator />
+              <DropdownMenuSeparator className="notion-table-actions-separator" />
+              {moveActions.map((action) => (
+                <TableActionItem
+                  key={action.label}
+                  action={action}
+                  editor={editor}
+                />
+              ))}
+              <DropdownMenuSeparator className="notion-table-actions-separator" />
+              {columnInsertionActions.map((action) => (
+                <TableActionItem
+                  key={action.label}
+                  action={action}
+                  editor={editor}
+                />
+              ))}
+              <DropdownMenuSeparator className="notion-table-actions-separator" />
+              {insertionActions.map((action) => (
+                <TableActionItem
+                  key={action.label}
+                  action={action}
+                  editor={editor}
+                />
+              ))}
+              <DropdownMenuSeparator className="notion-table-actions-separator" />
+              {removalActions.map((action) => (
+                <TableActionItem
+                  key={action.label}
+                  action={action}
+                  editor={editor}
+                />
+              ))}
+              <DropdownMenuSeparator className="notion-table-actions-separator" />
               {destructiveActions.map((action) => (
                 <TableActionItem
                   key={action.label}

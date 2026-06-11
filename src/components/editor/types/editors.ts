@@ -108,6 +108,13 @@ export type TiptapEditorProps = {
    * `className` can extend or override default styles.
    */
   className?: string;
+
+  /**
+   * Placeholder shown when the editor is empty.
+   *
+   * @default "Write something..."
+   */
+  placeholder?: string;
 } & TiptapOptions;
 
 export type OnSaveArgs = {
@@ -272,6 +279,28 @@ export type RichTextEditorProps = {
    * - Tailwind utility classes
    * - Margins outside editor
    * - Positioning
+   */
+  className?: string;
+};
+
+//* NotionEditor Component
+export type NotionEditorProps = {
+  /**
+   * Instance of Tiptap Editor from useTiptapEditor.
+   */
+  editor: Editor;
+
+  /**
+   * Theme mode applied to the Notion editor.
+   *
+   * Use `light`, `dark`, or `system`.
+   *
+   * @default "light"
+   */
+  mode?: RichTextEditorMode;
+
+  /**
+   * Custom class names applied to the editor wrapper.
    */
   className?: string;
 };

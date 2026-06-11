@@ -857,7 +857,8 @@ export default function Menubar({
               onClick={toggleTextColor}
               className={cn(
                 "relative size-7 cursor-pointer rounded-r-none border-0 bg-transparent px-2 sm:size-8",
-                editorState.textColor && "bg-foreground shadow-xs",
+                editorState.textColor &&
+                  "bg-foreground shadow-xs hover:bg-foreground dark:hover:bg-foreground",
               )}
               data-active={!!editorState.textColor}
             >
@@ -957,7 +958,8 @@ export default function Menubar({
               onClick={() => applyHighlightColor(currentHighlightColor)}
               className={cn(
                 "relative size-7 cursor-pointer rounded-r-none border-0 bg-transparent px-2 sm:size-8",
-                editorState.isHighlight && "bg-foreground shadow-xs",
+                editorState.isHighlight &&
+                  "bg-foreground shadow-xs hover:bg-foreground dark:hover:bg-foreground",
               )}
               data-active={editorState.isHighlight}
             >
@@ -1108,7 +1110,8 @@ export default function Menubar({
                   // size="icon"
                   className={cn(
                     "h-7 cursor-pointer bg-transparent px-2 sm:h-8",
-                    isAnyAlignActive && "bg-primary text-primary-foreground",
+                    isAnyAlignActive &&
+                      "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground dark:hover:bg-primary dark:hover:text-primary-foreground",
                   )}
                 >
                   <ActiveAlignIcon className={cn("size-4")} />
@@ -1558,11 +1561,13 @@ function MenuBottons({
     <Button
       title={title}
       onClick={onClick}
+      variant="ghost"
       size="icon"
       className={cn(
         "size-7 cursor-pointer bg-transparent sm:size-8",
         className,
-        state && "bg-primary",
+        state &&
+          "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground dark:hover:bg-primary dark:hover:text-primary-foreground",
       )}
       {...props}
     >
@@ -1596,7 +1601,7 @@ function TextBlockButton({
       className={cn(
         "w-full rounded-none text-sm cursor-pointer",
         state
-          ? "bg-primary text-primary-foreground"
+          ? "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground dark:hover:bg-primary dark:hover:text-primary-foreground"
           : "bg-transparent text-foreground",
         !state && "hover:bg-foreground/5",
       )}

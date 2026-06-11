@@ -115,13 +115,6 @@ import { ImageUploadNode } from "../components/image-upload-node";
 const lowlight = createLowlight(all);
 
 export const extensions = [
-  //* PLACEHOLDER
-  Placeholder.configure({
-    placeholder: ({ editor }) => {
-      return editor.isEmpty ? "Write something..." : "";
-    },
-  }),
-
   //* STARTERKIT
   StarterKit.configure({
     codeBlock: false,
@@ -313,6 +306,7 @@ export default function useTiptapEditor({
   handleImageUpload,
   tableOfContents,
   className,
+  placeholder = "Write something...",
   immediatelyRender = false,
   ...options
 }: TiptapEditorProps = {}): TiptapEditorReturnTypes {
@@ -336,6 +330,11 @@ export default function useTiptapEditor({
 
     extensions: [
       ...extensions,
+      Placeholder.configure({
+        placeholder: ({ editor }) => {
+          return editor.isEmpty ? placeholder : "";
+        },
+      }),
       ...(tableOfContents ? [TableOfContents.configure(tableOfContents)] : []),
       ImageUploadNode.configure({
         accept: "image/*",

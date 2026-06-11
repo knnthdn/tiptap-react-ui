@@ -1,4 +1,4 @@
-:root {
+.tiptap-image-upload {
   --tiptap-image-upload-active: var(--tt-brand-color-500);
   --tiptap-image-upload-progress-bg: var(--tt-brand-color-50);
   --tiptap-image-upload-icon-bg: var(--tt-brand-color-500);
@@ -14,7 +14,8 @@
   --tiptap-image-upload-icon-color: var(--white);
 }
 
-.dark {
+.dark .tiptap-image-upload,
+.tr-editor.dark .tiptap-image-upload {
   --tiptap-image-upload-active: var(--tt-brand-color-400);
   --tiptap-image-upload-progress-bg: var(--tt-brand-color-900);
   --tiptap-image-upload-icon-bg: var(--tt-brand-color-400);

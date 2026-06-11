@@ -173,7 +173,7 @@ function RichTextEditorContent({
         {(enablePreview || enableModeToggle) && (
           <div
             className={cn(
-              "flex w-full items-center",
+              "flex w-full items-center ",
               enablePreview ? "justify-between" : "justify-end",
             )}
           >
