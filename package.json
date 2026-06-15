@@ -21,9 +21,10 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && node scripts/scope-public-css.mjs",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "pack:test": "node scripts/pack-and-install.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -67,13 +68,10 @@
     "lucide-react": "^1.0.0",
     "radix-ui": "^1.4.3",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "shadcn": "^4.0.0",
-    "tailwindcss": "^4"
+    "react-dom": "^19.0.0"
   },
   "dependencies": {
     "@floating-ui/react": "^0.27.19",
-    "@fontsource-variable/geist": "^5.2.8",
     "@tiptap/extension-code-block-lowlight": "^3.23.6",
     "@tiptap/extension-collaboration": "^3.23.6",
     "@tiptap/extension-drag-handle": "^3.23.6",
@@ -91,6 +89,7 @@
     "@tiptap/extensions": "^3.23.6",
     "@tiptap/y-tiptap": "^3.0.4",
     "chroma-js": "^3.2.0",
+    "cmdk": "^1.1.1",
     "highlight.js": "^11.8.0",
     "lowlight": "^3.0.0",
     "react-hotkeys-hook": "^5.3.2",

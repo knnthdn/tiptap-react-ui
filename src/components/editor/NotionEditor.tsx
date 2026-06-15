@@ -37,6 +37,13 @@ import NotionBubbleMenu, {
 import YoutubeBubbleMenu from "./YoutubeBubbleMenu";
 import { Button } from "../ui/button";
 import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandItem,
+  CommandList,
+} from "../ui/command";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -286,7 +293,8 @@ function NotionEditorInner({ editor, className }: NotionEditorProps) {
   const [activeCommandIndex, setActiveCommandIndex] = useState(0);
   const editorRootRef = useRef<HTMLDivElement>(null);
   const slashMenuRef = useRef<HTMLDivElement>(null);
-  const slashCommandItemRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const slashCommandListRef = useRef<HTMLDivElement>(null);
+  const slashCommandItemRefs = useRef<Array<HTMLDivElement | null>>([]);
   const dismissedSlashRangeRef = useRef<SlashMenuState["range"] | null>(null);
   const [isImageDialogOpen, setIsImageDialogOpen] = useState(false);
   const [imageUrl, setImageUrl] = useState("https://");
@@ -307,16 +315,25 @@ function NotionEditorInner({ editor, className }: NotionEditorProps) {
       window.matchMedia("(max-width: 640px)").matches,
   );
 
-  const deleteSlashQuery = useCallback(() => {
-    editor
-      .chain()
-      .focus()
-      .deleteRange({
-        from: slashMenu.range.from,
-        to: slashMenu.range.to,
-      })
-      .run();
-  }, [editor, slashMenu.range.from, slashMenu.range.to]);
+  const deleteSlashQuery = useCallback(
+    (range: SlashMenuState["range"] = slashMenu.range) => {
+      if (range.to <= range.from) return;
+
+      editor
+        .chain()
+        .focus()
+        .deleteRange({
+          from: range.from,
+          to: range.to,
+        })
+        .run();
+    },
+    [editor, slashMenu.range],
+  );
+
+  const clearSlashDecoration = useCallback(() => {
+    updateSlashDecoration(editor, DEFAULT_SLASH_MENU_STATE);
+  }, [editor]);
 
   const closeSlashMenu = useCallback((rememberDismissedRange = false) => {
     setSlashMenu((currentSlashMenu) => {
@@ -338,11 +355,25 @@ function NotionEditorInner({ editor, className }: NotionEditorProps) {
 
   const runCommand = useCallback(
     (command: () => void) => {
-      deleteSlashQuery();
-      command();
+      const range = slashMenu.range;
+
       closeSlashMenu();
+      clearSlashDecoration();
+      deleteSlashQuery(range);
+
+      queueMicrotask(() => {
+        if (!editor.isDestroyed) {
+          command();
+        }
+      });
     },
-    [closeSlashMenu, deleteSlashQuery],
+    [
+      clearSlashDecoration,
+      closeSlashMenu,
+      deleteSlashQuery,
+      editor,
+      slashMenu.range,
+    ],
   );
 
   const clampTableDimension = (value: number) => {
@@ -614,6 +645,22 @@ function NotionEditorInner({ editor, className }: NotionEditorProps) {
         .filter(({ commands }) => commands.length > 0),
     [visibleCommands],
   );
+  const activeCommandValue =
+    visibleCommands[Math.min(activeCommandIndex, visibleCommands.length - 1)]
+      ?.id ?? "";
+
+  const handleCommandValueChange = useCallback(
+    (value: string) => {
+      const index = visibleCommands.findIndex(
+        (command) => command.id === value,
+      );
+
+      if (index >= 0) {
+        setActiveCommandIndex(index);
+      }
+    },
+    [visibleCommands],
+  );
 
   const updateSlashMenu = useCallback(() => {
     const nextSlashMenu = mergeStableSlashMenuPosition(
@@ -681,7 +728,17 @@ function NotionEditorInner({ editor, className }: NotionEditorProps) {
   }, []);
 
   useEffect(() => {
-    updateSlashDecoration(editor, slashMenu);
+    let canceled = false;
+
+    queueMicrotask(() => {
+      if (!canceled) {
+        updateSlashDecoration(editor, slashMenu);
+      }
+    });
+
+    return () => {
+      canceled = true;
+    };
   }, [editor, slashMenu]);
 
   useEffect(() => {
@@ -696,6 +753,14 @@ function NotionEditorInner({ editor, className }: NotionEditorProps) {
 
   useEffect(() => {
     if (!slashMenu.open) return;
+
+    if (activeCommandIndex === 0) {
+      slashCommandListRef.current?.scrollTo({
+        top: 0,
+        behavior: "instant",
+      });
+      return;
+    }
 
     const activeItem = slashCommandItemRefs.current[activeCommandIndex];
 
@@ -755,7 +820,7 @@ function NotionEditorInner({ editor, className }: NotionEditorProps) {
         target.closest(
           [
             ".notion-slash-menu",
-            ".notion-selection-bubble",
+            ".tr-notion-selection-bubble",
             ".notion-bubble-local-menu",
             ".notion-block-controls",
             "[role='dialog']",
@@ -793,17 +858,16 @@ function NotionEditorInner({ editor, className }: NotionEditorProps) {
     if (event.key === "ArrowDown") {
       event.preventDefault();
       event.stopPropagation();
-      setActiveCommandIndex((index) => (index + 1) % visibleCommands.length);
+      setActiveCommandIndex((index) =>
+        Math.min(index + 1, visibleCommands.length - 1),
+      );
       return;
     }
 
     if (event.key === "ArrowUp") {
       event.preventDefault();
       event.stopPropagation();
-      setActiveCommandIndex(
-        (index) =>
-          (index - 1 + visibleCommands.length) % visibleCommands.length,
-      );
+      setActiveCommandIndex((index) => Math.max(index - 1, 0));
       return;
     }
 
@@ -840,83 +904,101 @@ function NotionEditorInner({ editor, className }: NotionEditorProps) {
   const hasFullHeightLayout =
     !!className && /\bh-(full|screen|dvh|svh|lvh)\b/.test(className);
 
+  useEffect(() => {
+    const editorElement = editor.view.dom;
+
+    editorElement.classList.add("tr-notion-tiptap");
+
+    return () => {
+      editorElement.classList.remove("tr-notion-tiptap");
+    };
+  }, [editor]);
+
   return (
-    <>
+    <div
+      ref={editorRootRef}
+      className={cn(
+        "w-full tr-editor sm:px-10! rounded",
+        hasFullHeightLayout && "h-full",
+        resolvedTheme === "dark" && "dark",
+        className,
+      )}
+    >
       <div
-        ref={editorRootRef}
         className={cn(
-          "w-full tr-editor bg-transparent sm:px-10! rounded",
-          hasFullHeightLayout && "h-full",
-          resolvedTheme === "dark" && "dark",
-          className,
+          "tr-editor-shell tr-notion-editor-shell relative flex flex-col",
+          hasFullHeightLayout && "h-full min-h-0",
         )}
+        onKeyDownCapture={handleKeyDown}
       >
         <div
-          className={cn(
-            "editor-shell relative flex flex-col",
-            hasFullHeightLayout && "h-full min-h-0",
-          )}
-          onKeyDownCapture={handleKeyDown}
+          className={cn(hasFullHeightLayout && "flex min-h-0 flex-1 flex-col")}
         >
-          <div
+          <NotionBubbleMenu editor={editor} />
+          <YoutubeBubbleMenu editor={editor} />
+
+          <EditorContent
+            editor={editor}
             className={cn(
-              hasFullHeightLayout && "flex min-h-0 flex-1 flex-col",
+              "notion-editor-content",
+              hasFullHeightLayout && "min-h-0 flex-1 [&>.tiptap]:max-h-full",
             )}
-          >
-            <NotionBubbleMenu editor={editor} />
-            <YoutubeBubbleMenu editor={editor} />
+          />
 
-            <EditorContent
-              editor={editor}
-              className={cn(
-                "notion-editor-content bg-transparent",
-                hasFullHeightLayout && "min-h-0 flex-1 [&>.tiptap]:max-h-full",
-              )}
-            />
-
-            {slashMenu.open && (
-              <div
-                ref={slashMenuRef}
-                className="notion-slash-menu"
-                style={{
-                  top: slashMenu.position.top,
-                  left: slashMenu.position.left,
-                }}
-                onMouseDown={(event) => event.preventDefault()}
-              >
-                {visibleCommands.length > 0 ? (
-                  visibleCommandGroups.map((group, groupIndex) => {
+          {slashMenu.open && (
+            <Command
+              ref={slashMenuRef}
+              shouldFilter={false}
+              loop={false}
+              disablePointerSelection
+              value={activeCommandValue}
+              onValueChange={handleCommandValueChange}
+              className="notion-slash-menu"
+              style={{
+                top: slashMenu.position.top,
+                left: slashMenu.position.left,
+              }}
+              onMouseDown={(event) => event.preventDefault()}
+            >
+              <div className="notion-slash-menu-title">Command Box</div>
+              {visibleCommands.length > 0 ? (
+                <CommandList
+                  ref={slashCommandListRef}
+                  className="notion-slash-command-list"
+                >
+                  {visibleCommandGroups.map((group, groupIndex) => {
                     const previousItemsCount = visibleCommandGroups
                       .slice(0, groupIndex)
                       .reduce((count, item) => count + item.commands.length, 0);
 
                     return (
-                      <div
+                      <CommandGroup
                         key={group.group}
+                        heading={
+                          <div className="notion-slash-menu-section-label">
+                            {group.group}
+                          </div>
+                        }
                         className="notion-slash-menu-section"
                       >
-                        <div className="notion-slash-menu-section-label">
-                          {group.group}
-                        </div>
-
                         {group.commands.map((command, commandIndex) => {
                           const Icon = command.icon;
                           const index = previousItemsCount + commandIndex;
+                          const selected = index === activeCommandIndex;
 
                           return (
-                            <button
+                            <CommandItem
                               key={command.id}
                               ref={(element) => {
                                 slashCommandItemRefs.current[index] = element;
                               }}
-                              type="button"
+                              value={command.id}
+                              keywords={command.aliases}
                               className={cn(
                                 "notion-slash-menu-item",
-                                index === activeCommandIndex &&
-                                  "notion-slash-menu-item-active",
+                                selected && "notion-slash-menu-item-active",
                               )}
-                              onMouseEnter={() => setActiveCommandIndex(index)}
-                              onClick={() => runCommand(command.run)}
+                              onSelect={() => runCommand(command.run)}
                             >
                               <span className="notion-slash-menu-icon">
                                 {command.iconLabel ? (
@@ -930,78 +1012,78 @@ function NotionEditorInner({ editor, className }: NotionEditorProps) {
                               <span className="notion-slash-menu-label">
                                 <span>{command.title}</span>
                               </span>
-                            </button>
+                            </CommandItem>
                           );
                         })}
-                      </div>
+                      </CommandGroup>
                     );
-                  })
-                ) : (
-                  <div className="notion-slash-menu-empty">
-                    No commands found
-                  </div>
-                )}
-              </div>
-            )}
-
-            <DragHandle
-              editor={editor}
-              className={cn(
-                "notion-block-controls z-5000",
-                isSmallScreen && "notion-block-controls-mobile",
+                  })}
+                </CommandList>
+              ) : (
+                <CommandEmpty className="notion-slash-menu-empty">
+                  No commands found
+                </CommandEmpty>
               )}
-              computePositionConfig={{
-                placement: isSmallScreen ? "right" : "left",
-                strategy: "absolute",
-              }}
-              nested={{
-                edgeDetection: "right",
-                rules: [
-                  {
-                    id: "excludeTablesCompletely",
-                    evaluate: ({ node, parent }) => {
-                      const isTableStructure = [
-                        "tableRow",
-                        "tableCell",
-                        "tableHeader",
-                      ].includes(node.type.name);
-                      const isInsideTable =
-                        parent?.type.name === "tableCell" ||
-                        parent?.type.name === "tableHeader" ||
-                        parent?.type.name === "tableRow";
+            </Command>
+          )}
 
-                      // Exclude table structure nodes, and also exclude any nested content
-                      // inside table cells/headers/rows so the handle never shows per cell.
-                      return isTableStructure || isInsideTable ? 1000 : 0;
-                    },
+          <DragHandle
+            editor={editor}
+            className={cn(
+              "notion-block-controls z-5000",
+              isSmallScreen && "notion-block-controls-mobile",
+            )}
+            computePositionConfig={{
+              placement: isSmallScreen ? "right" : "left",
+              strategy: "absolute",
+            }}
+            nested={{
+              edgeDetection: "right",
+              rules: [
+                {
+                  id: "excludeTablesCompletely",
+                  evaluate: ({ node, parent }) => {
+                    const isTableStructure = [
+                      "tableRow",
+                      "tableCell",
+                      "tableHeader",
+                    ].includes(node.type.name);
+                    const isInsideTable =
+                      parent?.type.name === "tableCell" ||
+                      parent?.type.name === "tableHeader" ||
+                      parent?.type.name === "tableRow";
+
+                    // Exclude table structure nodes, and also exclude any nested content
+                    // inside table cells/headers/rows so the handle never shows per cell.
+                    return isTableStructure || isInsideTable ? 1000 : 0;
                   },
-                ],
-              }}
-            >
-              <div className="notion-block-control-group">
-                {!isSmallScreen && (
-                  <button
-                    type="button"
-                    tabIndex={-1}
-                    aria-label="Add block"
-                    className="notion-block-control-button"
-                    onMouseDown={handlePlusMouseDown}
-                  >
-                    <Plus className="size-4" />
-                  </button>
-                )}
-
+                },
+              ],
+            }}
+          >
+            <div className="notion-block-control-group">
+              {!isSmallScreen && (
                 <button
                   type="button"
                   tabIndex={-1}
-                  aria-label="Drag block"
-                  className="notion-block-control-button cursor-grab"
+                  aria-label="Add block"
+                  className="notion-block-control-button"
+                  onMouseDown={handlePlusMouseDown}
                 >
-                  <GripVertical className="size-4" />
+                  <Plus className="size-4" />
                 </button>
-              </div>
-            </DragHandle>
-          </div>
+              )}
+
+              <button
+                type="button"
+                tabIndex={-1}
+                aria-label="Drag block"
+                className="notion-block-control-button cursor-grab"
+              >
+                <GripVertical className="size-4" />
+              </button>
+            </div>
+          </DragHandle>
         </div>
       </div>
 
@@ -1223,7 +1305,7 @@ function NotionEditorInner({ editor, className }: NotionEditorProps) {
           </form>
         </DialogContent>
       </Dialog>
-    </>
+    </div>
   );
 }
 

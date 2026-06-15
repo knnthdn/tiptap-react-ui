@@ -59,17 +59,6 @@ type TiptapOptions = Pick<
  * UI-level behavior controls for the wrapper component.
  */
 export type TiptapEditorProps = {
-  /**
-   * Enables preview mode for the editor UI.
-   *
-   * When true:
-   * - Editor padding is removed for better preview layout
-   * - Editor is styled as read-only preview surface
-   *
-   * @default false
-   */
-  isPreview?: boolean;
-
   handleImageUpload?: {
     onUpload?: (
       file: File,
@@ -101,11 +90,12 @@ export type TiptapEditorProps = {
    * Class applied to the ProseMirror editor element.
    *
    * Default behavior:
-   * - `max-h-[60vh]` limits editor height to 60% of the viewport
-   * - `overflow-y-auto` enables scrolling for long content
+   * - The hook only applies core editor typography/focus classes.
+   * - It does not impose minimum height, maximum height, scrolling, padding,
+   *   borders, or background styles.
    *
-   * In non-preview mode, padding and border styles are applied.
-   * `className` can extend or override default styles.
+   * Pass layout and visual classes here when the editable ProseMirror element
+   * itself should be constrained or styled.
    */
   className?: string;
 
@@ -131,6 +121,17 @@ export const RICH_TEXT_EDITOR_THEMES = [
   "emerald",
   "amber",
   "github",
+  "coffee",
+  "mono",
+  "slate",
+  "midnight",
+  "ocean",
+  "forest",
+  "sunset",
+  "cream",
+  "cyber",
+  "lavender",
+  "terminal",
 ] as const;
 
 export type RichTextEditorTheme = (typeof RICH_TEXT_EDITOR_THEMES)[number];
@@ -265,6 +266,17 @@ export type RichTextEditorProps = {
    * - `emerald`
    * - `amber`
    * - `github`
+   * - `coffee`
+   * - `mono`
+   * - `slate`
+   * - `midnight`
+   * - `ocean`
+   * - `forest`
+   * - `sunset`
+   * - `cream`
+   * - `cyber`
+   * - `lavender`
+   * - `terminal`
    *
    * @default "default"
    */
@@ -301,6 +313,21 @@ export type NotionEditorProps = {
 
   /**
    * Custom class names applied to the editor wrapper.
+   *
+   * Default behavior:
+   * - The Notion editor does not reserve a minimum canvas height.
+   * - The editor grows naturally with its content.
+   * - Overflow remains visible so floating controls and slash commands are not
+   *   clipped by the editor surface.
+   * - Shared `useTiptapEditor` defaults do not impose height, scrolling,
+   *   padding, borders, or background styles.
+   *
+   * Pass layout and background classes here for the Notion editor wrapper,
+   * such as `bg-zinc-50`, `min-h-[24rem]`, or `h-screen`.
+   *
+   * To constrain the editable ProseMirror surface itself, pass `className` to
+   * `useTiptapEditor`, for example:
+   * `useTiptapEditor({ className: "max-h-[70vh] overflow-y-auto" })`.
    */
   className?: string;
 };

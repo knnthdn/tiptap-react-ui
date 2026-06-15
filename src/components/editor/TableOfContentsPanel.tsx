@@ -28,7 +28,7 @@ export default function TableOfContentsPanel({
     <nav
       aria-label="Table of contents"
       className={cn(
-        "tr-editor shrink-0 border-b bg-background/95 px-5 pt-5 pb-6 text-sm lg:w-64 lg:border-b-0 lg:py-6",
+        "tr-table-of-contents shrink-0 border-b bg-transparent px-5 pt-5 pb-6 text-sm lg:w-64 lg:border-b-0 lg:py-6",
         position === "left" ? "lg:pr-6" : "lg:pl-6",
         className,
       )}

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { TextSelection } from "@tiptap/pm/state";
 import { useEditorState, type Editor } from "@tiptap/react";
 import { BubbleMenu as TiptapBubbleMenu } from "@tiptap/react/menus";
@@ -42,12 +42,19 @@ type NotionBubbleMenuProps = {
 };
 
 type ActiveBubbleMenu = "color" | "more" | "turn" | null;
+type BubbleColorType = "highlight" | "text";
+type RecentBubbleColor = {
+  color: string;
+  type: BubbleColorType;
+};
 
 export const NOTION_BUBBLE_MENU_PLUGIN_KEY = "notionBubbleMenu";
+const RECENT_COLORS_STORAGE_KEY = "tiptap-react-ui-notion-recent-colors";
+const MAX_RECENT_COLORS = 6;
 
 const TEXT_COLORS = [
-  "#374151",
-  "#6b7280",
+  "#ffffff",
+  "#000000",
   "#92400e",
   "#c2410c",
   "#a16207",
@@ -76,6 +83,25 @@ export default function NotionBubbleMenu({ editor }: NotionBubbleMenuProps) {
   const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false);
   const [activeMenu, setActiveMenu] = useState<ActiveBubbleMenu>(null);
   const [customColor, setCustomColor] = useState("#7c3aed");
+  const [recentColors, setRecentColors] = useState<RecentBubbleColor[]>(() => {
+    if (typeof window === "undefined") return [];
+
+    try {
+      const value = window.localStorage.getItem(RECENT_COLORS_STORAGE_KEY);
+      if (!value) return [];
+
+      const parsed = JSON.parse(value) as RecentBubbleColor[];
+      return Array.isArray(parsed)
+        ? parsed.filter(
+            (item) =>
+              (item.type === "text" || item.type === "highlight") &&
+              typeof item.color === "string",
+          )
+        : [];
+    } catch {
+      return [];
+    }
+  });
 
   const editorState = useEditorState({
     editor,
@@ -111,6 +137,27 @@ export default function NotionBubbleMenu({ editor }: NotionBubbleMenuProps) {
     return "Text";
   }, [editorState]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    window.localStorage.setItem(
+      RECENT_COLORS_STORAGE_KEY,
+      JSON.stringify(recentColors),
+    );
+  }, [recentColors]);
+
+  function rememberColor(type: BubbleColorType, color: string) {
+    const normalizedColor = color.trim().toLowerCase();
+    if (!normalizedColor) return;
+
+    setRecentColors((colors) => [
+      { type, color: normalizedColor },
+      ...colors.filter(
+        (item) => item.type !== type || item.color !== normalizedColor,
+      ),
+    ].slice(0, MAX_RECENT_COLORS));
+  }
+
   function handleLinkClick() {
     if (editorState.isLink) {
       editor.chain().focus().unsetLink().run();
@@ -145,10 +192,11 @@ export default function NotionBubbleMenu({ editor }: NotionBubbleMenuProps) {
     const selectionEnd = editor.state.selection.to;
 
     editor.chain().focus().setColor(color).setTextSelection(selectionEnd).run();
+    rememberColor("text", color);
     setActiveMenu(null);
   }
 
-  function applyHighlightColor(color: string) {
+function applyHighlightColor(color: string) {
     const selectionEnd = editor.state.selection.to;
 
     editor
@@ -157,7 +205,25 @@ export default function NotionBubbleMenu({ editor }: NotionBubbleMenuProps) {
       .setHighlight({ color })
       .setTextSelection(selectionEnd)
       .run();
+    rememberColor("highlight", color);
     setActiveMenu(null);
+  }
+
+  function getColorSwatchStyle(item: RecentBubbleColor) {
+    if (item.type === "highlight") {
+      return {
+        backgroundColor: item.color,
+        borderColor: item.color,
+      };
+    }
+
+    const isLightTextColor = isLightColor(item.color);
+
+    return {
+      backgroundColor: isLightTextColor ? item.color : "transparent",
+      color: isLightTextColor ? "#111827" : item.color,
+      borderColor: item.color,
+    };
   }
 
   function applyTextAlign(alignment: "left" | "center" | "right" | "justify") {
@@ -199,7 +265,7 @@ export default function NotionBubbleMenu({ editor }: NotionBubbleMenuProps) {
           offset: 10,
           onHide: () => setActiveMenu(null),
         }}
-        className="notion-selection-bubble"
+        className="tr-notion-selection-bubble"
       >
         <div className="notion-bubble-popover-wrap">
           <button
@@ -368,7 +434,7 @@ export default function NotionBubbleMenu({ editor }: NotionBubbleMenuProps) {
           >
             <span
               className="notion-bubble-color-preview"
-              style={{ color: editorState.textColor ?? "#7c3aed" }}
+              style={{ color: editorState.textColor ?? "var(--color-primary)" }}
             >
               A
             </span>
@@ -378,15 +444,29 @@ export default function NotionBubbleMenu({ editor }: NotionBubbleMenuProps) {
           {activeMenu === "color" && (
             <div className="notion-bubble-color-menu notion-bubble-local-menu notion-bubble-local-menu-end">
               <div className="notion-bubble-menu-label">Recently Used</div>
-              <button
-                type="button"
-                className="notion-bubble-color-recent"
-                onClick={() => {
-                  applyTextColor("#f59e0b");
-                }}
-              >
-                A
-              </button>
+              {recentColors.length > 0 ? (
+                <div className="notion-bubble-recent-colors">
+                  {recentColors.map((item) => (
+                    <button
+                      key={`${item.type}-${item.color}`}
+                      type="button"
+                      className="notion-bubble-color-recent"
+                      style={getColorSwatchStyle(item)}
+                      onClick={() => {
+                        if (item.type === "text") {
+                          applyTextColor(item.color);
+                        } else {
+                          applyHighlightColor(item.color);
+                        }
+                      }}
+                    >
+                      {item.type === "text" ? "A" : null}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="notion-bubble-recent-empty">No recent colors</div>
+              )}
 
               <div className="notion-bubble-menu-label">Text Color</div>
               <ColorGrid
@@ -599,24 +679,51 @@ type ColorGridProps = {
   onSelect: (color: string) => void;
 };
 
+function isLightColor(color: string) {
+  const normalizedColor = color.trim().toLowerCase();
+
+  if (normalizedColor === "white" || normalizedColor === "#fff") return true;
+  if (/^#ffffff(?:ff)?$/.test(normalizedColor)) return true;
+  if (!/^#[\da-f]{6}$/i.test(normalizedColor)) return false;
+
+  const red = Number.parseInt(normalizedColor.slice(1, 3), 16);
+  const green = Number.parseInt(normalizedColor.slice(3, 5), 16);
+  const blue = Number.parseInt(normalizedColor.slice(5, 7), 16);
+  const luminance = (0.2126 * red + 0.7152 * green + 0.0722 * blue) / 255;
+
+  return luminance > 0.88;
+}
+
 function ColorGrid({ colors, type, onSelect }: ColorGridProps) {
   return (
     <div className="notion-bubble-color-grid">
-      {colors.map((color) => (
-        <button
-          key={`${type}-${color}`}
-          type="button"
-          className="notion-bubble-color-swatch"
-          style={{
-            backgroundColor: type === "highlight" ? color : "transparent",
-            color: type === "text" ? color : "#6b7280",
-            borderColor: color,
-          }}
-          onClick={() => onSelect(color)}
-        >
-          {type === "text" ? "A" : null}
-        </button>
-      ))}
+      {colors.map((color) => {
+        const isLightTextColor = type === "text" && isLightColor(color);
+
+        return (
+          <button
+            key={`${type}-${color}`}
+            type="button"
+            className="notion-bubble-color-swatch"
+            style={{
+              backgroundColor:
+                type === "highlight" || isLightTextColor
+                  ? color
+                  : "transparent",
+              color:
+                type === "text"
+                  ? isLightTextColor
+                    ? "#111827"
+                    : color
+                  : "#6b7280",
+              borderColor: color,
+            }}
+            onClick={() => onSelect(color)}
+          >
+            {type === "text" ? "A" : null}
+          </button>
+        );
+      })}
     </div>
   );
 }

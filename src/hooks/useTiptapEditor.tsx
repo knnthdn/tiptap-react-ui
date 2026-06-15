@@ -302,7 +302,6 @@ export const extensions = [
  * @returns Editor instance and content helpers.
  */
 export default function useTiptapEditor({
-  isPreview = false,
   handleImageUpload,
   tableOfContents,
   className,
@@ -320,8 +319,7 @@ export default function useTiptapEditor({
     editorProps: {
       attributes: {
         class: cn(
-          "tiptap text-left text-base min-h-50 max-h-[60vh] overflow-y-auto",
-          !isPreview && "px-6 py-8 border focus:outline-0",
+          "tiptap text-left text-base focus:outline-0",
           className,
         ),
         spellcheck: "false",

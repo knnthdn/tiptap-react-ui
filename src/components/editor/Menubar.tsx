@@ -1,4 +1,4 @@
-import { ButtonHTMLAttributes, useEffect, useMemo } from "react";
+import { ButtonHTMLAttributes, useEffect, useMemo, useState } from "react";
 import { Editor, useEditorState } from "@tiptap/react";
 import { Button } from "../ui/button";
 import type { Level as HeadingsLevel } from "@tiptap/extension-heading";
@@ -82,6 +82,9 @@ const HIGHLIGHT_PRESETS = [
   "#f9a8d4",
 ] as const;
 
+const TABLE_PICKER_ROWS = 10;
+const TABLE_PICKER_COLS = 10;
+
 const FONT_SIZE_OPTIONS = [
   { key: "default", label: "16px", value: null },
   { key: "12", label: "12px", value: "12px" },
@@ -149,6 +152,10 @@ export default function Menubar({
   onHighlightColorChange,
 }: MenubarProps) {
   const { uiState, actions } = useMenubarUiState(highlightColor);
+  const [hoveredTableSize, setHoveredTableSize] = useState<{
+    rows: number;
+    cols: number;
+  } | null>(null);
   const {
     isLinkDialogOpen,
     linkUrl,
@@ -375,9 +382,15 @@ export default function Menubar({
     return Math.min(50, Math.max(1, Math.trunc(value)));
   };
 
-  const handleInsertTable = () => {
-    const rows = clampTableDimension(tableRows);
-    const cols = clampTableDimension(tableCols);
+  const selectedTableRows = hoveredTableSize?.rows ?? tableRows;
+  const selectedTableCols = hoveredTableSize?.cols ?? tableCols;
+
+  const handleInsertTable = (
+    rowsValue = selectedTableRows,
+    colsValue = selectedTableCols,
+  ) => {
+    const rows = clampTableDimension(rowsValue);
+    const cols = clampTableDimension(colsValue);
 
     editor
       .chain()
@@ -387,6 +400,7 @@ export default function Menubar({
 
     setTableRows(rows);
     setTableCols(cols);
+    setHoveredTableSize(null);
     setIsInsertTableDialogOpen(false);
   };
 
@@ -493,6 +507,12 @@ export default function Menubar({
 
     setIsYoutubeDialogOpen(false);
   };
+
+  useEffect(() => {
+    if (!isInsertTableDialogOpen) {
+      setHoveredTableSize(null);
+    }
+  }, [isInsertTableDialogOpen]);
 
   //* HANDLE HIGHLIGHT FUNCTIONS
   const setHighlightColorValue = (color: string) => {
@@ -1215,12 +1235,108 @@ export default function Menubar({
 
         {/* ── GROUP 10: INSERT (Table, Image, YouTube) ── */}
         <div className="flex shrink-0 items-center gap-1">
-          <MenuBottons
-            onClick={resetTableDialog}
-            state={editorState.isTable}
-            Icon={Table2}
-            title="Insert table"
-          />
+          <DropdownMenu
+            open={isInsertTableDialogOpen}
+            onOpenChange={(open) => {
+              if (open) {
+                resetTableDialog();
+              } else {
+                setIsInsertTableDialogOpen(false);
+              }
+            }}
+          >
+            <DropdownMenuTrigger asChild>
+              <Button
+                title="Insert table"
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  "size-7 cursor-pointer bg-transparent sm:size-8",
+                  editorState.isTable &&
+                    "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground dark:hover:bg-primary dark:hover:text-primary-foreground",
+                )}
+              >
+                <Table2
+                  className={cn(
+                    "size-4",
+                    editorState.isTable
+                      ? "text-primary-foreground"
+                      : "text-foreground",
+                  )}
+                />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="start"
+              sideOffset={10}
+              className="tr-table-picker-dropdown w-auto p-3"
+              onCloseAutoFocus={(event) => event.preventDefault()}
+            >
+              <div
+                className="tr-table-picker"
+                onMouseLeave={() => setHoveredTableSize(null)}
+              >
+                {Array.from({ length: TABLE_PICKER_ROWS }, (_, rowIndex) =>
+                  Array.from({ length: TABLE_PICKER_COLS }, (_, colIndex) => {
+                    const rows = rowIndex + 1;
+                    const cols = colIndex + 1;
+                    const isActive =
+                      rows <= selectedTableRows && cols <= selectedTableCols;
+
+                    return (
+                      <button
+                        key={`${rows}-${cols}`}
+                        type="button"
+                        aria-label={`Insert ${rows} by ${cols} table`}
+                        className={cn(
+                          "tr-table-picker-cell",
+                          isActive && "tr-table-picker-cell-active",
+                        )}
+                        onFocus={() => setHoveredTableSize({ rows, cols })}
+                        onMouseEnter={() => setHoveredTableSize({ rows, cols })}
+                        onClick={() => handleInsertTable(rows, cols)}
+                      />
+                    );
+                  }),
+                )}
+              </div>
+
+              <div className="tr-table-picker-meta">
+                <label
+                  htmlFor="table-header-row"
+                  className="tr-table-picker-checkbox"
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  <Input
+                    id="table-header-row"
+                    type="checkbox"
+                    checked={tableWithHeaderRow}
+                    onChange={(event) =>
+                      setTableWithHeaderRow(event.target.checked)
+                    }
+                    className="size-4"
+                  />
+                  Include Header
+                </label>
+
+                <span className="tr-table-picker-size">
+                  {selectedTableRows} x {selectedTableCols}
+                </span>
+              </div>
+
+              <button
+                type="button"
+                className="tr-table-picker-delete"
+                disabled={!editorState.isTable}
+                onClick={() => {
+                  editor.chain().focus().deleteTable().run();
+                  setIsInsertTableDialogOpen(false);
+                }}
+              >
+                Delete Table
+              </button>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           <MenuBottons
             onClick={handleImageClick}
@@ -1453,90 +1569,6 @@ export default function Menubar({
         </DialogContent>
       </Dialog>
 
-      {/* INSERT TABLE DIALOG */}
-      <Dialog
-        open={isInsertTableDialogOpen}
-        onOpenChange={setIsInsertTableDialogOpen}
-      >
-        <DialogContent
-          className="sm:max-w-md"
-          onOpenAutoFocus={(event) => event.preventDefault()}
-        >
-          <DialogHeader>
-            <DialogTitle>Insert table</DialogTitle>
-            <DialogDescription>
-              Choose how many rows and columns you want.
-            </DialogDescription>
-          </DialogHeader>
-          <form
-            onSubmit={(event) => {
-              event.preventDefault();
-              handleInsertTable();
-            }}
-            className="space-y-4"
-          >
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label htmlFor="table-rows">Rows</Label>
-                <Input
-                  id="table-rows"
-                  type="number"
-                  min={1}
-                  max={50}
-                  value={tableRows}
-                  onChange={(event) =>
-                    setTableRows(
-                      clampTableDimension(Number(event.target.value)),
-                    )
-                  }
-                />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="table-columns">Columns</Label>
-                <Input
-                  id="table-columns"
-                  type="number"
-                  min={1}
-                  max={50}
-                  value={tableCols}
-                  onChange={(event) =>
-                    setTableCols(
-                      clampTableDimension(Number(event.target.value)),
-                    )
-                  }
-                />
-              </div>
-            </div>
-            <div className="flex items-center gap-2 text-sm w-fit cursor-pointer select-none">
-              <Input
-                id="table-header-row"
-                type="checkbox"
-                checked={tableWithHeaderRow}
-                onChange={(event) =>
-                  setTableWithHeaderRow(event.target.checked)
-                }
-                className="size-4"
-              />
-              <Label htmlFor="table-header-row" className="cursor-pointer">
-                Header row
-              </Label>
-            </div>
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsInsertTableDialogOpen(false)}
-                className="cursor-pointer"
-              >
-                Cancel
-              </Button>
-              <Button type="submit" className="cursor-pointer">
-                Insert
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }

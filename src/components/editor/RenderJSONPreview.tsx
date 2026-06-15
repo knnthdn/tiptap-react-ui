@@ -35,7 +35,6 @@ export default function RenderJSONPreview({
     className: cn(editorsClassName, _height && "max-h-[var(--editor-height)]"),
     content,
     editable: false,
-    isPreview: true,
     injectCSS: true,
     immediatelyRender,
     tableOfContents:

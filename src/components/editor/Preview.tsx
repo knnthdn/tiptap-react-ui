@@ -35,7 +35,7 @@ export default function Preview({
     tableOfContentsItems.length > 0;
 
   return (
-    <div className="tr-editor w-full bg-background text-foreground border rounded-lg shadow-sm overflow-hidden">
+    <div className="tr-preview w-full bg-background text-foreground border rounded-lg shadow-sm overflow-hidden">
       {/* Header bar (same design as before) */}
       <div className="flex justify-between items-center px-3 py-2 border-b text-xs text-muted-foreground">
         <div className=" flex items-center gap-2 ">

@@ -47,7 +47,6 @@ export default function RenderJSONPreview({
     className: cn("max-h-none overflow-y-visible", editorsClassName),
     content,
     editable: false,
-    isPreview: true,
     injectCSS: true,
     immediatelyRender,
     tableOfContents: enableTableOfContents
@@ -98,7 +97,7 @@ export default function RenderJSONPreview({
       {enableTableOfContents ? (
         <div
           className={cn(
-            "flex flex-col bg-background",
+            "flex flex-col bg-transparent",
             tableOfContentsPosition === "left"
               ? "lg:flex-row"
               : "lg:flex-row-reverse",

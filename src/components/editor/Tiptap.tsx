@@ -11,8 +11,8 @@ import { EditorContent, useEditorState } from "@tiptap/react";
 import DragHandle from "@tiptap/extension-drag-handle-react";
 
 //* CUSTOM IMPORTS
-import BubbleMenu from "../editor/BubbleMenu";
 import Menubar from "../editor/Menubar";
+import NotionBubbleMenu from "../editor/NotionBubbleMenu";
 import YoutubeBubbleMenu from "../editor/YoutubeBubbleMenu";
 import { CaseSensitiveIcon, GripVertical } from "lucide-react";
 import { cn, formatDate } from "../../lib/utils";
@@ -155,16 +155,12 @@ function RichTextEditorContent({
     !!className && /\bh-(full|screen|dvh|svh|lvh)\b/.test(className);
 
   return (
-    <div
-      className={cn(
-        hasFullHeightLayout && "h-full",
-        resolvedTheme === "dark" && "dark",
-      )}
-    >
+    <div className={cn(hasFullHeightLayout && "h-full")}>
       <Tabs
         defaultValue="edit"
         className={cn(
           "w-full tr-editor bg-transparent",
+          resolvedTheme === "dark" && "dark",
           hasFullHeightLayout && "flex h-full min-h-0 flex-col",
           className,
         )}
@@ -198,7 +194,7 @@ function RichTextEditorContent({
         >
           <div
             className={cn(
-              "editor-shell relative flex flex-col",
+              "tr-editor-shell relative flex flex-col",
               hasFullHeightLayout && "h-full min-h-0",
             )}
           >
@@ -215,15 +211,15 @@ function RichTextEditorContent({
                 hasFullHeightLayout && "flex min-h-0 flex-1 flex-col",
               )}
             >
-              <BubbleMenu editor={editor} highlightColor={highlightColor} />
+              <NotionBubbleMenu editor={editor} />
               <YoutubeBubbleMenu editor={editor} />
 
               <EditorContent
                 editor={editor}
                 className={cn(
-                  "bg-background",
-                  hasFullHeightLayout &&
-                    "min-h-0 flex-1 [&>.tiptap]:max-h-full",
+                  "tr-rich-editor-content",
+                  hasFullHeightLayout && "tr-rich-editor-content-full",
+                  !enableWordCount && "tr-rich-editor-content-no-footer",
                 )}
               />
 
@@ -287,7 +283,7 @@ function RichTextEditorContent({
                   type="button"
                   tabIndex={-1}
                   aria-label="Drag block"
-                  className="drag-handle-button flex cursor-grab items-center justify-center text-muted-foreground transition hover:text-accent-foreground "
+                  className="tr-drag-handle-button flex cursor-grab items-center justify-center text-muted-foreground transition hover:text-accent-foreground "
                 >
                   <GripVertical className="size-4" />
                 </button>

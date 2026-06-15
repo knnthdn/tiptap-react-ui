@@ -189,7 +189,6 @@
 }
 
 /* Global colors - Dark mode */
-.dark .tr-editor,
 .tr-editor.dark {
   --tt-bg-color: var(--black);
   --tt-border-color: var(--tt-gray-dark-a-200);
@@ -229,7 +228,6 @@
   --tt-color-text-red-contrast: hsla(8, 79%, 79%, 0.4);
 }
 
-.dark .tr-editor,
 .tr-editor.dark {
   --tt-color-text-gray: hsl(0, 0%, 61%);
   --tt-color-text-brown: hsl(18, 35%, 58%);
@@ -275,7 +273,6 @@
   --tt-color-highlight-pink-contrast: rgba(225, 136, 179, 0.27);
 }
 
-.dark .tr-editor,
 .tr-editor.dark {
   --tt-color-highlight-yellow: #6b6524;
   --tt-color-highlight-green: #509568;
