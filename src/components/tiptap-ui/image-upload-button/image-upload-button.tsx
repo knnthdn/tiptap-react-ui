@@ -65,6 +65,7 @@ export const ImageUploadButton = forwardRef<
       onInserted,
       showShortcut = false,
       onClick,
+      disabled,
 
       children,
       ...buttonProps
@@ -98,7 +99,7 @@ export const ImageUploadButton = forwardRef<
         variant="ghost"
         size="sm"
         type="button"
-        disabled={!canInsert}
+        disabled={disabled || !canInsert}
         aria-label={label}
         aria-pressed={isActive}
         onClick={handleClick}

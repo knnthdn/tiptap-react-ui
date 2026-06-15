@@ -55,6 +55,15 @@ import { Label } from "../ui/label";
 import { Separator } from "../ui/separator";
 import { ImageUploadButton } from "../tiptap-ui/image-upload-button";
 import { useMenubarUiState } from "./hooks/useMenubarUiState";
+import {
+  getExtensionGroupState,
+  isExtensionDisabled,
+  isExtensionHidden,
+} from "./extension-state";
+import type {
+  EditorExtensionName,
+  EditorExtensionStateMap,
+} from "./types/editors";
 
 const TEXT_COLOR_PRESETS = [
   "#111827",
@@ -138,6 +147,7 @@ function getReadableTextColor(background: string) {
 
 type MenubarProps = {
   editor: Editor;
+  extensionState?: EditorExtensionStateMap;
   highlightColor: string;
   onHighlightColorChange: (color: string) => void;
   handleUserSaveAction: () => void;
@@ -146,6 +156,7 @@ type MenubarProps = {
 
 export default function Menubar({
   editor,
+  extensionState,
   highlightColor,
   handleUserSaveAction,
   hasOnSave,
@@ -705,166 +716,245 @@ export default function Menubar({
     editorState.isAlignRight ||
     editorState.isAlignJustify;
 
+  const control = (extension: EditorExtensionName) => ({
+    disabled: isExtensionDisabled(extensionState, extension),
+    hidden: isExtensionHidden(extensionState, extension),
+  });
+
+  const group = (extensions: EditorExtensionName[]) =>
+    getExtensionGroupState(extensionState, extensions);
+
+  const groupClassName = (extensions: EditorExtensionName[]) =>
+    cn(
+      "flex shrink-0 items-center gap-1",
+      group(extensions).disabled && "opacity-60",
+    );
+
+  const historyGroup = group(["undo", "redo"]);
+  const typographyGroup = group(["heading", "fontFamily", "fontSize"]);
+  const inlineGroup = group(["bold", "italic", "underline", "strike"]);
+  const colorGroup = group(["textColor", "highlight"]);
+  const linkCodeGroup = group(["link", "inlineCode"]);
+  const alignGroup = group([
+    "alignLeft",
+    "alignCenter",
+    "alignRight",
+    "alignJustify",
+  ]);
+  const listGroup = group(["bulletList", "orderedList", "taskList"]);
+  const blockGroup = group([
+    "blockquote",
+    "codeBlock",
+    "horizontalRule",
+    "hardBreak",
+  ]);
+  const insertGroup = group(["table", "image", "imageUpload", "youtube"]);
+
   return (
     <>
       <div className="flex w-full flex-wrap gap-1.5 rounded-t-sm border border-b-0 bg-muted p-1.5 sm:gap-2.5 sm:p-2">
         {/* ── GROUP 1: HISTORY ── */}
-        <div className="flex shrink-0 items-center gap-1">
-          <MenuBottons
-            onClick={() => editor.chain().focus().undo().run()}
-            state={false}
-            Icon={Undo2}
-            title="Undo (CTRL + Z)"
-            disabled={!editorState.canUndo}
-          />
-          <MenuBottons
-            onClick={() => editor.chain().focus().redo().run()}
-            state={false}
-            Icon={Redo2}
-            title="Redo (CTRL + Y)"
-            disabled={!editorState.canRedo}
-          />
-          <Separator orientation="vertical" />
-        </div>
+        {!historyGroup.hidden && (
+          <div className={groupClassName(["undo", "redo"])}>
+            {!control("undo").hidden && (
+              <MenuBottons
+                onClick={() => editor.chain().focus().undo().run()}
+                state={false}
+                Icon={Undo2}
+                title="Undo (CTRL + Z)"
+                disabled={!editorState.canUndo || control("undo").disabled}
+              />
+            )}
+            {!control("redo").hidden && (
+              <MenuBottons
+                onClick={() => editor.chain().focus().redo().run()}
+                state={false}
+                Icon={Redo2}
+                title="Redo (CTRL + Y)"
+                disabled={!editorState.canRedo || control("redo").disabled}
+              />
+            )}
+            <Separator orientation="vertical" />
+          </div>
+        )}
 
         {/* ── GROUP 3: TYPOGRAPHY (Font Family + Font Size + Headings) ── */}
-        <div className="flex shrink-0 items-center gap-1">
-          <DropdownMenu
-            open={isTextBlockMenuOpen}
-            onOpenChange={setIsTextBlockMenuOpen}
-          >
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                className="h-7 cursor-pointer px-2 text-foreground sm:h-8"
+        {!typographyGroup.hidden && (
+          <div className={groupClassName(["heading", "fontFamily", "fontSize"])}>
+            {!control("heading").hidden && (
+              <DropdownMenu
+                open={isTextBlockMenuOpen}
+                onOpenChange={(open) =>
+                  setIsTextBlockMenuOpen(
+                    control("heading").disabled ? false : open,
+                  )
+                }
               >
-                {editorState.isHeading1 && <HeadingsIcon label="1" />}
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    disabled={control("heading").disabled}
+                    className="h-7 cursor-pointer px-2 text-foreground sm:h-8"
+                  >
+                    {editorState.isHeading1 && <HeadingsIcon label="1" />}
 
-                {editorState.isHeading2 && <HeadingsIcon label="2" />}
+                    {editorState.isHeading2 && <HeadingsIcon label="2" />}
 
-                {editorState.isHeading3 && <HeadingsIcon label="3" />}
+                    {editorState.isHeading3 && <HeadingsIcon label="3" />}
 
-                {editorState.isHeading4 && <HeadingsIcon label="4" />}
+                    {editorState.isHeading4 && <HeadingsIcon label="4" />}
 
-                {editorState.isHeading5 && <HeadingsIcon label="5" />}
+                    {editorState.isHeading5 && <HeadingsIcon label="5" />}
 
-                {editorState.isHeading6 && <HeadingsIcon label="6" />}
+                    {editorState.isHeading6 && <HeadingsIcon label="6" />}
 
-                {!editor.isActive("heading") && <span>H</span>}
-                <ChevronDown />
-              </Button>
-            </DropdownMenuTrigger>
+                    {!editor.isActive("heading") && <span>H</span>}
+                    <ChevronDown />
+                  </Button>
+                </DropdownMenuTrigger>
 
-            <DropdownMenuContent className="max-h-60 px-0 py-0 overflow-hidden">
-              {textBlocks.map((options, i) => {
-                return (
-                  <TextBlockButton
-                    key={i}
-                    label={options.label}
-                    onClick={() => {
-                      editor
-                        .chain()
-                        .toggleHeading({
-                          level: options.level as HeadingsLevel,
-                        })
-                        .run();
+                <DropdownMenuContent className="max-h-60 px-0 py-0 overflow-hidden">
+                  {textBlocks.map((options, i) => {
+                    return (
+                      <TextBlockButton
+                        key={i}
+                        label={options.label}
+                        onClick={() => {
+                          editor
+                            .chain()
+                            .toggleHeading({
+                              level: options.level as HeadingsLevel,
+                            })
+                            .run();
 
-                      setIsTextBlockMenuOpen(false);
-                    }}
-                    state={options.state}
-                    title={options.label}
-                  />
-                );
-              })}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                          setIsTextBlockMenuOpen(false);
+                        }}
+                        state={options.state}
+                        title={options.label}
+                      />
+                    );
+                  })}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
 
-          <DropdownMenu
-            open={isFontFamilyMenuOpen}
-            onOpenChange={setIsFontFamilyMenuOpen}
-          >
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                className="h-7 min-w-24 cursor-pointer px-2 text-foreground sm:h-8 sm:min-w-28"
+            {!control("fontFamily").hidden && (
+              <DropdownMenu
+                open={isFontFamilyMenuOpen}
+                onOpenChange={(open) =>
+                  setIsFontFamilyMenuOpen(
+                    control("fontFamily").disabled ? false : open,
+                  )
+                }
               >
-                {activeFontFamily.label}
-                <ChevronDown />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="min-w-50 max-h-80 px-0 py-0 overflow-auto">
-              {FONT_FAMILY_OPTIONS.map((option) => (
-                <TextBlockButton
-                  key={option.key}
-                  label={option.label}
-                  onClick={() => applyFontFamily(option.value)}
-                  state={activeFontFamily.key === option.key}
-                  title={`Font Family ${option.label}`}
-                />
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    disabled={control("fontFamily").disabled}
+                    className="h-7 min-w-24 cursor-pointer px-2 text-foreground sm:h-8 sm:min-w-28"
+                  >
+                    {activeFontFamily.label}
+                    <ChevronDown />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="min-w-50 max-h-80 px-0 py-0 overflow-auto">
+                  {FONT_FAMILY_OPTIONS.map((option) => (
+                    <TextBlockButton
+                      key={option.key}
+                      label={option.label}
+                      onClick={() => applyFontFamily(option.value)}
+                      state={activeFontFamily.key === option.key}
+                      title={`Font Family ${option.label}`}
+                    />
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
 
-          <DropdownMenu
-            open={isFontSizeMenuOpen}
-            onOpenChange={setIsFontSizeMenuOpen}
-          >
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                className="h-7 min-w-16 cursor-pointer px-2 text-foreground sm:h-8 sm:min-w-20"
+            {!control("fontSize").hidden && (
+              <DropdownMenu
+                open={isFontSizeMenuOpen}
+                onOpenChange={(open) =>
+                  setIsFontSizeMenuOpen(
+                    control("fontSize").disabled ? false : open,
+                  )
+                }
               >
-                {activeFontSize.label}
-                <ChevronDown />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="max-h-60 px-0 py-0 w-5">
-              {FONT_SIZE_OPTIONS.map((option) => (
-                <TextBlockButton
-                  key={option.key}
-                  label={option.label}
-                  onClick={() => applyFontSize(option.value)}
-                  state={activeFontSize.key === option.key}
-                  title={`Font Size ${option.label}`}
-                />
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <Separator orientation="vertical" className="ml-1" />
-        </div>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    disabled={control("fontSize").disabled}
+                    className="h-7 min-w-16 cursor-pointer px-2 text-foreground sm:h-8 sm:min-w-20"
+                  >
+                    {activeFontSize.label}
+                    <ChevronDown />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="max-h-60 px-0 py-0 w-5">
+                  {FONT_SIZE_OPTIONS.map((option) => (
+                    <TextBlockButton
+                      key={option.key}
+                      label={option.label}
+                      onClick={() => applyFontSize(option.value)}
+                      state={activeFontSize.key === option.key}
+                      title={`Font Size ${option.label}`}
+                    />
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+            <Separator orientation="vertical" className="ml-1" />
+          </div>
+        )}
 
         {/* ── GROUP 4: INLINE FORMATTING (Bold, Italic, Underline, Strikethrough) ── */}
-        <div className="flex shrink-0 items-center gap-1">
-          <MenuBottons
-            onClick={() => editor.chain().focus().toggleBold().run()}
-            state={editorState.isBold}
-            Icon={Bold}
-            title="Bold (CTRL + B)"
-          />
-          <MenuBottons
-            onClick={() => editor.chain().focus().toggleItalic().run()}
-            state={editorState.isItalic}
-            Icon={Italic}
-            title="Italic (CTRL + I)"
-          />
-          <MenuBottons
-            onClick={() => editor.chain().focus().toggleUnderline().run()}
-            state={editorState.isUnderlined}
-            Icon={Underline}
-            title="Underline (CTRL + U)"
-          />
-          <MenuBottons
-            onClick={() => editor.chain().focus().toggleStrike().run()}
-            state={editorState.isStrike}
-            Icon={Strikethrough}
-            title="StrikeThrough (CTRL + SHFT + S)"
-          />
-          <Separator orientation="vertical" />
-        </div>
+        {!inlineGroup.hidden && (
+          <div className={groupClassName(["bold", "italic", "underline", "strike"])}>
+            {!control("bold").hidden && (
+              <MenuBottons
+                onClick={() => editor.chain().focus().toggleBold().run()}
+                state={editorState.isBold}
+                Icon={Bold}
+                title="Bold (CTRL + B)"
+                disabled={control("bold").disabled}
+              />
+            )}
+            {!control("italic").hidden && (
+              <MenuBottons
+                onClick={() => editor.chain().focus().toggleItalic().run()}
+                state={editorState.isItalic}
+                Icon={Italic}
+                title="Italic (CTRL + I)"
+                disabled={control("italic").disabled}
+              />
+            )}
+            {!control("underline").hidden && (
+              <MenuBottons
+                onClick={() => editor.chain().focus().toggleUnderline().run()}
+                state={editorState.isUnderlined}
+                Icon={Underline}
+                title="Underline (CTRL + U)"
+                disabled={control("underline").disabled}
+              />
+            )}
+            {!control("strike").hidden && (
+              <MenuBottons
+                onClick={() => editor.chain().focus().toggleStrike().run()}
+                state={editorState.isStrike}
+                Icon={Strikethrough}
+                title="StrikeThrough (CTRL + SHFT + S)"
+                disabled={control("strike").disabled}
+              />
+            )}
+            <Separator orientation="vertical" />
+          </div>
+        )}
 
         {/* ── GROUP 5: TEXT COLOR & HIGHLIGHT ── */}
-        <div className="flex shrink-0 items-center gap-1">
+        {!colorGroup.hidden && (
+        <div className={groupClassName(["textColor", "highlight"])}>
           {/* TEXT COLOR */}
+          {!control("textColor").hidden && (
           <div
             className={cn(
               "inline-flex items-center rounded-md border",
@@ -875,6 +965,7 @@ export default function Menubar({
               title="Apply text color"
               size="icon"
               onClick={toggleTextColor}
+              disabled={control("textColor").disabled}
               className={cn(
                 "relative size-7 cursor-pointer rounded-r-none border-0 bg-transparent px-2 sm:size-8",
                 editorState.textColor &&
@@ -900,13 +991,18 @@ export default function Menubar({
             </Button>
             <DropdownMenu
               open={isTextColorMenuOpen}
-              onOpenChange={setIsTextColorMenuOpen}
+              onOpenChange={(open) =>
+                setIsTextColorMenuOpen(
+                  control("textColor").disabled ? false : open,
+                )
+              }
             >
               <DropdownMenuTrigger asChild>
                 <Button
                   title="Choose text color"
                   size="icon"
                   variant="ghost"
+                  disabled={control("textColor").disabled}
                   className="size-7 cursor-pointer rounded-l-none border-0 border-l border-border/50 bg-transparent px-1.5 sm:size-8"
                 >
                   <ChevronDown className="size-3.5 text-foreground" />
@@ -964,8 +1060,10 @@ export default function Menubar({
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
+          )}
 
           {/* HIGHLIGHT */}
+          {!control("highlight").hidden && (
           <div
             className={cn(
               "inline-flex items-center rounded-md border",
@@ -976,6 +1074,7 @@ export default function Menubar({
               title="Highlight (CTRL + SHFT + H)"
               size="icon"
               onClick={() => applyHighlightColor(currentHighlightColor)}
+              disabled={control("highlight").disabled}
               className={cn(
                 "relative size-7 cursor-pointer rounded-r-none border-0 bg-transparent px-2 sm:size-8",
                 editorState.isHighlight &&
@@ -1001,13 +1100,18 @@ export default function Menubar({
             </Button>
             <DropdownMenu
               open={isHighlightMenuOpen}
-              onOpenChange={setIsHighlightMenuOpen}
+              onOpenChange={(open) =>
+                setIsHighlightMenuOpen(
+                  control("highlight").disabled ? false : open,
+                )
+              }
             >
               <DropdownMenuTrigger asChild>
                 <Button
                   title="Choose highlight color"
                   size="icon"
                   variant="ghost"
+                  disabled={control("highlight").disabled}
                   className="size-7 cursor-pointer rounded-l-none border-0 border-l border-border/50 bg-transparent px-1.5 sm:size-8"
                 >
                   <ChevronDown className="size-3.5 text-foreground" />
@@ -1058,76 +1162,107 @@ export default function Menubar({
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
+          )}
 
           <Separator orientation="vertical" className="ml-1" />
         </div>
+        )}
 
         {/* ── GROUP 6: LINK & INLINE CODE ── */}
-        <div className="flex shrink-0 items-center gap-1">
-          <MenuBottons
-            onClick={handleLinkClick}
-            state={editorState.isLink}
-            Icon={Link2}
-            title="Insert Link"
-          />
-          <MenuBottons
-            onClick={() => editor.chain().focus().toggleCode().run()}
-            state={editorState.isCode}
-            Icon={Code}
-            title="Inline Code (CTRL + E)"
-          />
-          <Separator orientation="vertical" />
-        </div>
+        {!linkCodeGroup.hidden && (
+          <div className={groupClassName(["link", "inlineCode"])}>
+            {!control("link").hidden && (
+              <MenuBottons
+                onClick={handleLinkClick}
+                state={editorState.isLink}
+                Icon={Link2}
+                title="Insert Link"
+                disabled={control("link").disabled}
+              />
+            )}
+            {!control("inlineCode").hidden && (
+              <MenuBottons
+                onClick={() => editor.chain().focus().toggleCode().run()}
+                state={editorState.isCode}
+                Icon={Code}
+                title="Inline Code (CTRL + E)"
+                disabled={control("inlineCode").disabled}
+              />
+            )}
+            <Separator orientation="vertical" />
+          </div>
+        )}
 
         {/* ── GROUP 7: TEXT ALIGNMENT ── */}
-        <div className="flex shrink-0 items-center gap-1">
+        {!alignGroup.hidden && (
+        <div className={groupClassName([
+          "alignLeft",
+          "alignCenter",
+          "alignRight",
+          "alignJustify",
+        ])}>
           {/* Desktop: individual buttons */}
           <div className="hidden shrink-0 items-center gap-1 md:flex">
-            <MenuBottons
-              onClick={() =>
-                editor.chain().focus().toggleTextAlign("left").run()
-              }
-              state={editorState.isAlignLeft}
-              Icon={TextAlignStart}
-              title="Text Align Left (CTRL + SHFT + L)"
-            />
-            <MenuBottons
-              onClick={() =>
-                editor.chain().focus().toggleTextAlign("center").run()
-              }
-              state={editorState.isAlignCenter}
-              Icon={TextAlignCenter}
-              title="Text Align Center (CTRL + SHFT + E)"
-            />
-            <MenuBottons
-              onClick={() =>
-                editor.chain().focus().toggleTextAlign("right").run()
-              }
-              state={editorState.isAlignRight}
-              Icon={TextAlignEnd}
-              title="Text Align Right (CTRL + SHFT + R)"
-            />
-            <MenuBottons
-              onClick={() =>
-                editor.chain().focus().toggleTextAlign("justify").run()
-              }
-              state={editorState.isAlignJustify}
-              Icon={TextAlignJustify}
-              title="Text Align Justify (CTRL + SHFT + J)"
-            />
+            {!control("alignLeft").hidden && (
+              <MenuBottons
+                onClick={() =>
+                  editor.chain().focus().toggleTextAlign("left").run()
+                }
+                state={editorState.isAlignLeft}
+                Icon={TextAlignStart}
+                title="Text Align Left (CTRL + SHFT + L)"
+                disabled={control("alignLeft").disabled}
+              />
+            )}
+            {!control("alignCenter").hidden && (
+              <MenuBottons
+                onClick={() =>
+                  editor.chain().focus().toggleTextAlign("center").run()
+                }
+                state={editorState.isAlignCenter}
+                Icon={TextAlignCenter}
+                title="Text Align Center (CTRL + SHFT + E)"
+                disabled={control("alignCenter").disabled}
+              />
+            )}
+            {!control("alignRight").hidden && (
+              <MenuBottons
+                onClick={() =>
+                  editor.chain().focus().toggleTextAlign("right").run()
+                }
+                state={editorState.isAlignRight}
+                Icon={TextAlignEnd}
+                title="Text Align Right (CTRL + SHFT + R)"
+                disabled={control("alignRight").disabled}
+              />
+            )}
+            {!control("alignJustify").hidden && (
+              <MenuBottons
+                onClick={() =>
+                  editor.chain().focus().toggleTextAlign("justify").run()
+                }
+                state={editorState.isAlignJustify}
+                Icon={TextAlignJustify}
+                title="Text Align Justify (CTRL + SHFT + J)"
+                disabled={control("alignJustify").disabled}
+              />
+            )}
           </div>
 
           {/* Mobile: dropdown */}
           <div className="flex shrink-0 items-center gap-1 md:hidden">
             <DropdownMenu
               open={isAlignMenuOpen}
-              onOpenChange={setIsAlignMenuOpen}
+              onOpenChange={(open) =>
+                setIsAlignMenuOpen(alignGroup.disabled ? false : open)
+              }
             >
               <DropdownMenuTrigger asChild>
                 <Button
                   title="Align"
                   variant="outline"
                   // size="icon"
+                  disabled={alignGroup.disabled}
                   className={cn(
                     "h-7 cursor-pointer bg-transparent px-2 sm:h-8",
                     isAnyAlignActive &&
@@ -1139,105 +1274,155 @@ export default function Menubar({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="px-0 py-0 w-48">
+                {!control("alignLeft").hidden && (
                 <TextBlockButton
                   label="Align Left"
                   onClick={() => {
                     editor.chain().focus().toggleTextAlign("left").run();
                     setIsAlignMenuOpen(false);
                   }}
+                  disabled={control("alignLeft").disabled}
                   state={editorState.isAlignLeft}
                   title="Text Align Left (CTRL + SHFT + L)"
                 />
+                )}
+                {!control("alignCenter").hidden && (
                 <TextBlockButton
                   label="Align Center"
                   onClick={() => {
                     editor.chain().focus().toggleTextAlign("center").run();
                     setIsAlignMenuOpen(false);
                   }}
+                  disabled={control("alignCenter").disabled}
                   state={editorState.isAlignCenter}
                   title="Text Align Center (CTRL + SHFT + E)"
                 />
+                )}
+                {!control("alignRight").hidden && (
                 <TextBlockButton
                   label="Align Right"
                   onClick={() => {
                     editor.chain().focus().toggleTextAlign("right").run();
                     setIsAlignMenuOpen(false);
                   }}
+                  disabled={control("alignRight").disabled}
                   state={editorState.isAlignRight}
                   title="Text Align Right (CTRL + SHFT + R)"
                 />
+                )}
+                {!control("alignJustify").hidden && (
                 <TextBlockButton
                   label="Align Justify"
                   onClick={() => {
                     editor.chain().focus().toggleTextAlign("justify").run();
                     setIsAlignMenuOpen(false);
                   }}
+                  disabled={control("alignJustify").disabled}
                   state={editorState.isAlignJustify}
                   title="Text Align Justify (CTRL + SHFT + J)"
                 />
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
           <Separator orientation="vertical" />
         </div>
+        )}
 
         {/* ── GROUP 8: LISTS ── */}
-        <div className="flex shrink-0 items-center gap-1">
-          <MenuBottons
-            onClick={() => editor.chain().focus().toggleBulletList().run()}
-            state={editorState.isBulletList}
-            Icon={List}
-            title="Bullet List (CTRL + SHIFT + 8)"
-          />
-          <MenuBottons
-            onClick={() => editor.chain().focus().toggleOrderedList().run()}
-            state={editorState.isOrderedList}
-            Icon={ListOrdered}
-            title="Ordered List (CTRL + SHIFT + 7)"
-          />
-          <MenuBottons
-            onClick={() => editor.chain().focus().toggleTaskList().run()}
-            state={editorState.isTaskItem}
-            Icon={ListTodo}
-            title="Task List (CTRL + SHIFT + 9)"
-          />
-          <Separator orientation="vertical" />
-        </div>
+        {!listGroup.hidden && (
+          <div className={groupClassName(["bulletList", "orderedList", "taskList"])}>
+            {!control("bulletList").hidden && (
+              <MenuBottons
+                onClick={() => editor.chain().focus().toggleBulletList().run()}
+                state={editorState.isBulletList}
+                Icon={List}
+                title="Bullet List (CTRL + SHIFT + 8)"
+                disabled={control("bulletList").disabled}
+              />
+            )}
+            {!control("orderedList").hidden && (
+              <MenuBottons
+                onClick={() => editor.chain().focus().toggleOrderedList().run()}
+                state={editorState.isOrderedList}
+                Icon={ListOrdered}
+                title="Ordered List (CTRL + SHIFT + 7)"
+                disabled={control("orderedList").disabled}
+              />
+            )}
+            {!control("taskList").hidden && (
+              <MenuBottons
+                onClick={() => editor.chain().focus().toggleTaskList().run()}
+                state={editorState.isTaskItem}
+                Icon={ListTodo}
+                title="Task List (CTRL + SHIFT + 9)"
+                disabled={control("taskList").disabled}
+              />
+            )}
+            <Separator orientation="vertical" />
+          </div>
+        )}
 
         {/* ── GROUP 9: BLOCK ELEMENTS ── */}
-        <div className="flex shrink-0 items-center gap-1">
-          <MenuBottons
-            onClick={() => editor.chain().focus().toggleBlockquote().run()}
-            state={editorState.isQuote}
-            Icon={MessageSquareQuote}
-            title="BlockQuote (CTRL + SHFT + B)"
-          />
-          <MenuBottons
-            onClick={() => editor.chain().focus().toggleCodeBlock().run()}
-            state={editorState.isCodeBlock}
-            Icon={Terminal}
-            title="Code Block (CTRL + ALT + C)"
-          />
-          <MenuBottons
-            onClick={() => editor.chain().focus().setHorizontalRule().run()}
-            state={false}
-            Icon={Minus}
-            title="Insert Horizontal Rule"
-          />
-          <MenuBottons
-            onClick={() => editor.chain().focus().setHardBreak().run()}
-            state={false}
-            Icon={TextWrap}
-            title="HardBreak (CTRL + ENTER)"
-          />
-          <Separator orientation="vertical" />
-        </div>
+        {!blockGroup.hidden && (
+          <div className={groupClassName([
+            "blockquote",
+            "codeBlock",
+            "horizontalRule",
+            "hardBreak",
+          ])}>
+            {!control("blockquote").hidden && (
+              <MenuBottons
+                onClick={() => editor.chain().focus().toggleBlockquote().run()}
+                state={editorState.isQuote}
+                Icon={MessageSquareQuote}
+                title="BlockQuote (CTRL + SHFT + B)"
+                disabled={control("blockquote").disabled}
+              />
+            )}
+            {!control("codeBlock").hidden && (
+              <MenuBottons
+                onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+                state={editorState.isCodeBlock}
+                Icon={Terminal}
+                title="Code Block (CTRL + ALT + C)"
+                disabled={control("codeBlock").disabled}
+              />
+            )}
+            {!control("horizontalRule").hidden && (
+              <MenuBottons
+                onClick={() => editor.chain().focus().setHorizontalRule().run()}
+                state={false}
+                Icon={Minus}
+                title="Insert Horizontal Rule"
+                disabled={control("horizontalRule").disabled}
+              />
+            )}
+            {!control("hardBreak").hidden && (
+              <MenuBottons
+                onClick={() => editor.chain().focus().setHardBreak().run()}
+                state={false}
+                Icon={TextWrap}
+                title="HardBreak (CTRL + ENTER)"
+                disabled={control("hardBreak").disabled}
+              />
+            )}
+            <Separator orientation="vertical" />
+          </div>
+        )}
 
         {/* ── GROUP 10: INSERT (Table, Image, YouTube) ── */}
-        <div className="flex shrink-0 items-center gap-1">
+        {!insertGroup.hidden && (
+        <div className={groupClassName(["table", "image", "imageUpload", "youtube"])}>
+          {!control("table").hidden && (
           <DropdownMenu
             open={isInsertTableDialogOpen}
             onOpenChange={(open) => {
+              if (control("table").disabled) {
+                setIsInsertTableDialogOpen(false);
+                return;
+              }
+
               if (open) {
                 resetTableDialog();
               } else {
@@ -1250,6 +1435,7 @@ export default function Menubar({
                 title="Insert table"
                 variant="ghost"
                 size="icon"
+                disabled={control("table").disabled}
                 className={cn(
                   "size-7 cursor-pointer bg-transparent sm:size-8",
                   editorState.isTable &&
@@ -1337,29 +1523,40 @@ export default function Menubar({
               </button>
             </DropdownMenuContent>
           </DropdownMenu>
+          )}
 
+          {!control("image").hidden && (
           <MenuBottons
             onClick={handleImageClick}
             state={editorState.isImage}
             Icon={ImagePlus}
             title="Insert remote image"
+            disabled={control("image").disabled}
           />
+          )}
 
+          {!control("imageUpload").hidden && (
           <ImageUploadButton
             editor={editor}
             text=""
+            disabled={control("imageUpload").disabled}
             hideWhenUnavailable={true}
             onInserted={() => console.log("Image inserted!")}
             className="size-7 px-0 sm:size-8"
           />
+          )}
 
+          {!control("youtube").hidden && (
           <MenuBottons
             onClick={openYoutubeDialog}
             state={editorState.isYoutube}
             Icon={Video}
             title="Embed YouTube video"
+            disabled={control("youtube").disabled}
           />
+          )}
         </div>
+        )}
 
         {hasOnSave && (
           <div className="flex shrink-0 items-center gap-1">
@@ -1614,6 +1811,7 @@ function MenuBottons({
 }
 
 type TextBlockButtonProps = {
+  disabled?: boolean;
   state: boolean;
   onClick: () => void;
   label: string;
@@ -1621,6 +1819,7 @@ type TextBlockButtonProps = {
 };
 
 function TextBlockButton({
+  disabled = false,
   label,
   onClick,
   state,
@@ -1629,6 +1828,7 @@ function TextBlockButton({
   return (
     <Button
       title={title}
+      disabled={disabled}
       onClick={onClick}
       className={cn(
         "w-full rounded-none text-sm cursor-pointer",

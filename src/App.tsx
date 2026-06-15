@@ -17,7 +17,10 @@ export default function App() {
         enableTableOfContents
         tableOfContentsPosition="right"
         enableModeToggle
-        theme="terminal"
+        theme="violet"
+        extensionState={{
+          bold: "disable",
+        }}
       />
 
       {/* <NotionEditor

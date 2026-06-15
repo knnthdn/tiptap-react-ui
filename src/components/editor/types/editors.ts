@@ -140,6 +140,45 @@ export type RichTextEditorMode = "light" | "dark" | "system";
 
 export type TableOfContentsPosition = "left" | "right";
 
+export type EditorExtensionState = "visible" | "disable" | "hidden";
+
+export type EditorExtensionName =
+  | "history"
+  | "undo"
+  | "redo"
+  | "typography"
+  | "heading"
+  | "fontFamily"
+  | "fontSize"
+  | "bold"
+  | "italic"
+  | "underline"
+  | "strike"
+  | "textColor"
+  | "highlight"
+  | "link"
+  | "inlineCode"
+  | "textAlign"
+  | "alignLeft"
+  | "alignCenter"
+  | "alignRight"
+  | "alignJustify"
+  | "bulletList"
+  | "orderedList"
+  | "taskList"
+  | "blockquote"
+  | "codeBlock"
+  | "horizontalRule"
+  | "hardBreak"
+  | "table"
+  | "image"
+  | "imageUpload"
+  | "youtube";
+
+export type EditorExtensionStateMap = Partial<
+  Record<EditorExtensionName, EditorExtensionState>
+>;
+
 //* useTiptapEditor hooks return types
 
 export type TiptapEditorReturnTypes = {
@@ -232,6 +271,33 @@ export type RichTextEditorProps = {
   immediatelyRenderPreview?: boolean;
 
   /**
+   * Controls the visibility and interactivity of built-in editor features.
+   *
+   * Each key defaults to `"visible"` when omitted.
+   *
+   * - `"visible"`: feature is shown and works normally.
+   * - `"disable"`: feature remains visible, but its UI control and keyboard
+   *   shortcut are disabled.
+   * - `"hidden"`: feature is removed from the editor UI and its keyboard
+   *   shortcut is disabled.
+   *
+   * Group keys such as `history`, `typography`, and `textAlign` apply to their
+   * child controls unless a child control has its own state.
+   *
+   * @example
+   * ```tsx
+   * <RichTextEditor
+   *   editor={editor}
+   *   extensionState={{
+   *     imageUpload: "hidden",
+   *     bold: "disable",
+   *   }}
+   * />
+   * ```
+   */
+  extensionState?: EditorExtensionStateMap;
+
+  /**
    * Shows a theme mode toggle in the editor header.
    *
    * When true, users can switch the theme mode between
@@ -310,6 +376,29 @@ export type NotionEditorProps = {
    * @default "light"
    */
   mode?: RichTextEditorMode;
+
+  /**
+   * Controls the visibility and interactivity of built-in Notion editor
+   * commands, bubble menu controls, and matching keyboard shortcuts.
+   *
+   * Each key defaults to `"visible"` when omitted.
+   *
+   * - `"visible"`: feature is shown and works normally.
+   * - `"disable"`: feature remains visible, but cannot be selected or invoked.
+   * - `"hidden"`: feature is removed from slash commands / bubble menus.
+   *
+   * @example
+   * ```tsx
+   * <NotionEditor
+   *   editor={editor}
+   *   extensionState={{
+   *     imageUpload: "hidden",
+   *     table: "disable",
+   *   }}
+   * />
+   * ```
+   */
+  extensionState?: EditorExtensionStateMap;
 
   /**
    * Custom class names applied to the editor wrapper.

@@ -54,10 +54,16 @@ import {
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { cn } from "../../lib/utils";
-import type { NotionEditorProps } from "./types/editors";
+import type { EditorExtensionName, NotionEditorProps } from "./types/editors";
 import { ThemeProvider, useTheme } from "../theme-provider";
+import {
+  isExtensionDisabled,
+  isExtensionHidden,
+  shouldBlockExtensionShortcut,
+} from "./extension-state";
 
 type SlashCommand = {
+  extension: EditorExtensionName;
   group: "Insert" | "Style" | "Upload";
   id: string;
   title: string;
@@ -285,7 +291,11 @@ function getSlashMenuStateAtSelection(
   };
 }
 
-function NotionEditorInner({ editor, className }: NotionEditorProps) {
+function NotionEditorInner({
+  editor,
+  className,
+  extensionState,
+}: NotionEditorProps) {
   const { resolvedTheme } = useTheme();
   const [slashMenu, setSlashMenu] = useState<SlashMenuState>(
     DEFAULT_SLASH_MENU_STATE,
@@ -461,6 +471,7 @@ function NotionEditorInner({ editor, className }: NotionEditorProps) {
   const commands = useMemo<SlashCommand[]>(
     () => [
       {
+        extension: "heading",
         group: "Style",
         id: "heading-1",
         title: "Heading 1",
@@ -472,6 +483,7 @@ function NotionEditorInner({ editor, className }: NotionEditorProps) {
           editor.chain().focus().setNode("heading", { level: 1 }).run(),
       },
       {
+        extension: "heading",
         group: "Style",
         id: "heading-2",
         title: "Heading 2",
@@ -483,6 +495,7 @@ function NotionEditorInner({ editor, className }: NotionEditorProps) {
           editor.chain().focus().setNode("heading", { level: 2 }).run(),
       },
       {
+        extension: "heading",
         group: "Style",
         id: "heading-3",
         title: "Heading 3",
@@ -494,6 +507,7 @@ function NotionEditorInner({ editor, className }: NotionEditorProps) {
           editor.chain().focus().setNode("heading", { level: 3 }).run(),
       },
       {
+        extension: "bulletList",
         group: "Style",
         id: "bullet-list",
         title: "Bullet List",
@@ -503,6 +517,7 @@ function NotionEditorInner({ editor, className }: NotionEditorProps) {
         run: () => editor.chain().focus().toggleBulletList().run(),
       },
       {
+        extension: "orderedList",
         group: "Style",
         id: "numbered-list",
         title: "Numbered List",
@@ -512,6 +527,7 @@ function NotionEditorInner({ editor, className }: NotionEditorProps) {
         run: () => editor.chain().focus().toggleOrderedList().run(),
       },
       {
+        extension: "taskList",
         group: "Style",
         id: "task-list",
         title: "To-do List",
@@ -521,6 +537,7 @@ function NotionEditorInner({ editor, className }: NotionEditorProps) {
         run: () => editor.chain().focus().toggleTaskList().run(),
       },
       {
+        extension: "blockquote",
         group: "Style",
         id: "quote",
         title: "Blockquote",
@@ -530,6 +547,7 @@ function NotionEditorInner({ editor, className }: NotionEditorProps) {
         run: () => editor.chain().focus().toggleBlockquote().run(),
       },
       {
+        extension: "inlineCode",
         group: "Style",
         id: "inline-code",
         title: "Inline code",
@@ -539,6 +557,7 @@ function NotionEditorInner({ editor, className }: NotionEditorProps) {
         run: () => editor.chain().focus().toggleCode().run(),
       },
       {
+        extension: "codeBlock",
         group: "Style",
         id: "code",
         title: "Code block",
@@ -548,6 +567,7 @@ function NotionEditorInner({ editor, className }: NotionEditorProps) {
         run: () => editor.chain().focus().toggleCodeBlock().run(),
       },
       {
+        extension: "horizontalRule",
         group: "Insert",
         id: "horizontal-rule",
         title: "Separator",
@@ -557,6 +577,7 @@ function NotionEditorInner({ editor, className }: NotionEditorProps) {
         run: () => editor.chain().focus().setHorizontalRule().run(),
       },
       {
+        extension: "hardBreak",
         group: "Insert",
         id: "hard-break",
         title: "Hard break",
@@ -566,6 +587,7 @@ function NotionEditorInner({ editor, className }: NotionEditorProps) {
         run: () => editor.chain().focus().setHardBreak().run(),
       },
       {
+        extension: "table",
         group: "Insert",
         id: "table",
         title: "Table",
@@ -575,6 +597,7 @@ function NotionEditorInner({ editor, className }: NotionEditorProps) {
         run: () => setIsInsertTableDialogOpen(true),
       },
       {
+        extension: "youtube",
         group: "Insert",
         id: "youtube",
         title: "YouTube Embed",
@@ -590,6 +613,7 @@ function NotionEditorInner({ editor, className }: NotionEditorProps) {
         },
       },
       {
+        extension: "image",
         group: "Insert",
         id: "remote-image",
         title: "Remote image",
@@ -610,6 +634,7 @@ function NotionEditorInner({ editor, className }: NotionEditorProps) {
         },
       },
       {
+        extension: "imageUpload",
         group: "Upload",
         id: "upload-image",
         title: "Upload image",
@@ -625,13 +650,17 @@ function NotionEditorInner({ editor, className }: NotionEditorProps) {
   const visibleCommands = useMemo(() => {
     const query = slashMenu.query.toLowerCase();
 
-    if (!query) return commands;
+    const availableCommands = commands.filter(
+      (command) => !isExtensionHidden(extensionState, command.extension),
+    );
 
-    return commands.filter((command) => {
+    if (!query) return availableCommands;
+
+    return availableCommands.filter((command) => {
       const values = [command.title, command.id, ...command.aliases];
       return values.some((value) => value.toLowerCase().includes(query));
     });
-  }, [commands, slashMenu.query]);
+  }, [commands, extensionState, slashMenu.query]);
 
   const visibleCommandGroups = useMemo(
     () =>
@@ -853,6 +882,12 @@ function NotionEditorInner({ editor, className }: NotionEditorProps) {
   }, [closeFloatingMenus]);
 
   function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (shouldBlockExtensionShortcut(event, extensionState)) {
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+
     if (!slashMenu.open || visibleCommands.length === 0) return;
 
     if (event.key === "ArrowDown") {
@@ -878,6 +913,8 @@ function NotionEditorInner({ editor, className }: NotionEditorProps) {
         visibleCommands[
           Math.min(activeCommandIndex, visibleCommands.length - 1)
         ];
+      if (isExtensionDisabled(extensionState, command.extension)) return;
+
       runCommand(command.run);
       return;
     }
@@ -934,7 +971,7 @@ function NotionEditorInner({ editor, className }: NotionEditorProps) {
         <div
           className={cn(hasFullHeightLayout && "flex min-h-0 flex-1 flex-col")}
         >
-          <NotionBubbleMenu editor={editor} />
+          <NotionBubbleMenu editor={editor} extensionState={extensionState} />
           <YoutubeBubbleMenu editor={editor} />
 
           <EditorContent
@@ -985,6 +1022,10 @@ function NotionEditorInner({ editor, className }: NotionEditorProps) {
                           const Icon = command.icon;
                           const index = previousItemsCount + commandIndex;
                           const selected = index === activeCommandIndex;
+                          const disabled = isExtensionDisabled(
+                            extensionState,
+                            command.extension,
+                          );
 
                           return (
                             <CommandItem
@@ -993,12 +1034,18 @@ function NotionEditorInner({ editor, className }: NotionEditorProps) {
                                 slashCommandItemRefs.current[index] = element;
                               }}
                               value={command.id}
+                              disabled={disabled}
                               keywords={command.aliases}
                               className={cn(
                                 "notion-slash-menu-item",
                                 selected && "notion-slash-menu-item-active",
+                                disabled && "opacity-50",
                               )}
-                              onSelect={() => runCommand(command.run)}
+                              onSelect={() => {
+                                if (!disabled) {
+                                  runCommand(command.run);
+                                }
+                              }}
                             >
                               <span className="notion-slash-menu-icon">
                                 {command.iconLabel ? (

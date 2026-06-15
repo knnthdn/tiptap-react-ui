@@ -1902,14 +1902,37 @@
     width: 2.6rem;
   }
 
-  .notion-bubble-command:hover,
-  .notion-bubble-select:hover,
-  .notion-bubble-icon-button:hover,
-  .notion-bubble-color-trigger:hover,
-  .notion-bubble-more:hover,
+  .notion-bubble-command:not(:disabled):hover,
+  .notion-bubble-select:not(:disabled):hover,
+  .notion-bubble-icon-button:not(:disabled):hover,
+  .notion-bubble-color-trigger:not(:disabled):hover,
+  .notion-bubble-more:not(:disabled):hover,
   .notion-bubble-icon-button.is-active {
     background: var(--notion-bubble-active-bg);
     color: var(--notion-bubble-active-fg);
+  }
+
+  .notion-bubble-command:disabled,
+  .notion-bubble-select:disabled,
+  .notion-bubble-icon-button:disabled,
+  .notion-bubble-color-trigger:disabled,
+  .notion-bubble-more:disabled,
+  .notion-bubble-turn-item:disabled,
+  .notion-bubble-menu-button:disabled {
+    cursor: not-allowed;
+    background: transparent;
+    color: color-mix(in oklab, var(--color-muted-foreground) 50%, transparent);
+    opacity: 0.58;
+  }
+
+  .notion-bubble-command:disabled svg,
+  .notion-bubble-select:disabled svg,
+  .notion-bubble-icon-button:disabled svg,
+  .notion-bubble-color-trigger:disabled svg,
+  .notion-bubble-more:disabled svg,
+  .notion-bubble-turn-item:disabled svg,
+  .notion-bubble-menu-button:disabled svg {
+    color: color-mix(in oklab, var(--color-muted-foreground) 54%, transparent);
   }
 
   .notion-bubble-separator {
@@ -1984,7 +2007,7 @@
     text-align: left;
   }
 
-  .notion-bubble-turn-item:hover,
+  .notion-bubble-turn-item:not(:disabled):hover,
   .notion-bubble-turn-item.is-active {
     background: var(--notion-bubble-active-bg);
     color: var(--notion-bubble-active-fg);
@@ -2004,7 +2027,7 @@
     white-space: nowrap;
   }
 
-  .notion-bubble-menu-button:hover {
+  .notion-bubble-menu-button:not(:disabled):hover {
     background: var(--notion-bubble-active-bg);
     color: var(--notion-bubble-active-fg);
   }
@@ -2055,12 +2078,20 @@
     margin: 0.25rem 0 0.75rem;
   }
 
-  .notion-bubble-color-swatch:hover,
-  .notion-bubble-color-recent:hover {
+  .notion-bubble-color-swatch:not(:disabled):hover,
+  .notion-bubble-color-recent:not(:disabled):hover {
     box-shadow:
       0 0 0 2px var(--color-background),
       0 0 0 3px var(--color-ring),
       inset 0 0 0 1px color-mix(in oklab, var(--color-foreground) 10%, transparent);
+  }
+
+  .notion-bubble-color-swatch:disabled,
+  .notion-bubble-color-recent:disabled {
+    cursor: not-allowed;
+    filter: grayscale(0.55);
+    opacity: 0.42;
+    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--color-muted-foreground) 18%, transparent);
   }
 
   .notion-bubble-custom-color {
@@ -2097,10 +2128,18 @@
     font-weight: 500;
   }
 
-  .notion-bubble-custom-color-actions button:hover {
+  .notion-bubble-custom-color-actions button:not(:disabled):hover {
     border-color: color-mix(in oklab, var(--color-border) 70%, var(--color-foreground) 20%);
     background: var(--notion-bubble-active-bg);
     color: var(--notion-bubble-active-fg);
+  }
+
+  .notion-bubble-custom-color-actions button:disabled {
+    cursor: not-allowed;
+    border-color: color-mix(in oklab, var(--color-border) 72%, transparent);
+    background: color-mix(in oklab, var(--color-muted) 72%, transparent);
+    color: color-mix(in oklab, var(--color-muted-foreground) 58%, transparent);
+    opacity: 0.58;
   }
 
   .tr-editor.dark .tr-notion-selection-bubble {
@@ -2134,21 +2173,43 @@
     stroke-width: 2.15;
   }
 
-  .tr-editor.dark .notion-bubble-command:hover,
-  .tr-editor.dark .notion-bubble-select:hover,
-  .tr-editor.dark .notion-bubble-icon-button:hover,
-  .tr-editor.dark .notion-bubble-color-trigger:hover,
-  .tr-editor.dark .notion-bubble-more:hover,
+  .tr-editor.dark .notion-bubble-command:not(:disabled):hover,
+  .tr-editor.dark .notion-bubble-select:not(:disabled):hover,
+  .tr-editor.dark .notion-bubble-icon-button:not(:disabled):hover,
+  .tr-editor.dark .notion-bubble-color-trigger:not(:disabled):hover,
+  .tr-editor.dark .notion-bubble-more:not(:disabled):hover,
   .tr-editor.dark .notion-bubble-icon-button.is-active {
     color: var(--notion-bubble-active-fg);
   }
 
-  .tr-editor.dark .notion-bubble-select:hover svg,
-  .tr-editor.dark .notion-bubble-icon-button:hover svg,
-  .tr-editor.dark .notion-bubble-color-trigger:hover svg,
-  .tr-editor.dark .notion-bubble-more:hover svg,
+  .tr-editor.dark .notion-bubble-select:not(:disabled):hover svg,
+  .tr-editor.dark .notion-bubble-icon-button:not(:disabled):hover svg,
+  .tr-editor.dark .notion-bubble-color-trigger:not(:disabled):hover svg,
+  .tr-editor.dark .notion-bubble-more:not(:disabled):hover svg,
   .tr-editor.dark .notion-bubble-icon-button.is-active svg {
     color: var(--notion-bubble-active-fg);
+  }
+
+  .tr-editor.dark .notion-bubble-command:disabled,
+  .tr-editor.dark .notion-bubble-select:disabled,
+  .tr-editor.dark .notion-bubble-icon-button:disabled,
+  .tr-editor.dark .notion-bubble-color-trigger:disabled,
+  .tr-editor.dark .notion-bubble-more:disabled,
+  .tr-editor.dark .notion-bubble-turn-item:disabled,
+  .tr-editor.dark .notion-bubble-menu-button:disabled {
+    background: transparent;
+    color: color-mix(in oklab, var(--color-muted-foreground) 55%, transparent);
+    opacity: 0.54;
+  }
+
+  .tr-editor.dark .notion-bubble-command:disabled svg,
+  .tr-editor.dark .notion-bubble-select:disabled svg,
+  .tr-editor.dark .notion-bubble-icon-button:disabled svg,
+  .tr-editor.dark .notion-bubble-color-trigger:disabled svg,
+  .tr-editor.dark .notion-bubble-more:disabled svg,
+  .tr-editor.dark .notion-bubble-turn-item:disabled svg,
+  .tr-editor.dark .notion-bubble-menu-button:disabled svg {
+    color: color-mix(in oklab, var(--color-muted-foreground) 58%, transparent);
   }
 
   .tr-editor.dark .notion-bubble-local-menu {
@@ -2175,10 +2236,17 @@
     color: var(--color-foreground);
   }
 
-  .tr-editor.dark .notion-bubble-custom-color-actions button:hover {
+  .tr-editor.dark .notion-bubble-custom-color-actions button:not(:disabled):hover {
     border-color: color-mix(in oklab, var(--color-border) 70%, var(--color-foreground) 20%);
     background: var(--notion-bubble-active-bg);
     color: var(--notion-bubble-active-fg);
+  }
+
+  .tr-editor.dark .notion-bubble-custom-color-actions button:disabled {
+    border-color: color-mix(in oklab, var(--color-border) 70%, transparent);
+    background: color-mix(in oklab, var(--color-muted) 70%, transparent);
+    color: color-mix(in oklab, var(--color-muted-foreground) 58%, transparent);
+    opacity: 0.54;
   }
 
   .tr-notion-editor-shell {

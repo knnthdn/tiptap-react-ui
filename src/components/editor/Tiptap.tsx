@@ -21,6 +21,7 @@ import Preview from "./Preview";
 import type { RichTextEditorProps } from "./types/editors";
 import { ThemeProvider, useTheme } from "../theme-provider";
 import { ModeToggle } from "../mode-toggle";
+import { shouldBlockExtensionShortcut } from "./extension-state";
 
 /**
  * This component is responsible for showing Editors UI.
@@ -41,6 +42,7 @@ export default function RichtextEditor({
   enableModeToggle = false,
   mode = "light",
   theme = "default",
+  extensionState,
   className,
 }: RichTextEditorProps) {
   const [highlightColor, setHighlightColor] = useState("#ffcc00");
@@ -97,6 +99,7 @@ export default function RichtextEditor({
         enableWordCount={enableWordCount}
         highlightColor={highlightColor}
         immediatelyRenderPreview={immediatelyRenderPreview}
+        extensionState={extensionState}
         onHighlightColorChange={setHighlightColor}
         onSetActivePreview={setActivePrev}
         onUserSaveAction={onUserSaveAction}
@@ -123,6 +126,7 @@ type RichTextEditorContentProps = {
   hasOnSave: boolean;
   highlightColor: string;
   immediatelyRenderPreview: boolean;
+  extensionState: RichTextEditorProps["extensionState"];
   onHighlightColorChange: (color: string) => void;
   onSetActivePreview: Dispatch<SetStateAction<"json" | "html">>;
   onUserSaveAction: () => void;
@@ -143,6 +147,7 @@ function RichTextEditorContent({
   hasOnSave,
   highlightColor,
   immediatelyRenderPreview,
+  extensionState,
   onHighlightColorChange,
   onSetActivePreview,
   onUserSaveAction,
@@ -197,6 +202,12 @@ function RichTextEditorContent({
               "tr-editor-shell relative flex flex-col",
               hasFullHeightLayout && "h-full min-h-0",
             )}
+            onKeyDownCapture={(event) => {
+              if (shouldBlockExtensionShortcut(event, extensionState)) {
+                event.preventDefault();
+                event.stopPropagation();
+              }
+            }}
           >
             <Menubar
               editor={editor}
@@ -204,6 +215,7 @@ function RichTextEditorContent({
               onHighlightColorChange={onHighlightColorChange}
               handleUserSaveAction={onUserSaveAction}
               hasOnSave={hasOnSave}
+              extensionState={extensionState}
             />
 
             <div
@@ -211,7 +223,10 @@ function RichTextEditorContent({
                 hasFullHeightLayout && "flex min-h-0 flex-1 flex-col",
               )}
             >
-              <NotionBubbleMenu editor={editor} />
+              <NotionBubbleMenu
+                editor={editor}
+                extensionState={extensionState}
+              />
               <YoutubeBubbleMenu editor={editor} />
 
               <EditorContent

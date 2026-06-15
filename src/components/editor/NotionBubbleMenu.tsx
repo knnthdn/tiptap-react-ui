@@ -36,9 +36,19 @@ import {
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { cn } from "../../lib/utils";
+import {
+  getExtensionGroupState,
+  isExtensionDisabled,
+  isExtensionHidden,
+} from "./extension-state";
+import type {
+  EditorExtensionName,
+  EditorExtensionStateMap,
+} from "./types/editors";
 
 type NotionBubbleMenuProps = {
   editor: Editor;
+  extensionState?: EditorExtensionStateMap;
 };
 
 type ActiveBubbleMenu = "color" | "more" | "turn" | null;
@@ -78,7 +88,10 @@ const HIGHLIGHT_COLORS = [
   "#fee2e2",
 ];
 
-export default function NotionBubbleMenu({ editor }: NotionBubbleMenuProps) {
+export default function NotionBubbleMenu({
+  editor,
+  extensionState,
+}: NotionBubbleMenuProps) {
   const [linkUrl, setLinkUrl] = useState("https://");
   const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false);
   const [activeMenu, setActiveMenu] = useState<ActiveBubbleMenu>(null);
@@ -136,6 +149,37 @@ export default function NotionBubbleMenu({ editor }: NotionBubbleMenuProps) {
     if (editorState.isBlockquote) return "Blockquote";
     return "Text";
   }, [editorState]);
+
+  const control = (extension: EditorExtensionName) => ({
+    disabled: isExtensionDisabled(extensionState, extension),
+    hidden: isExtensionHidden(extensionState, extension),
+  });
+
+  const turnGroup = getExtensionGroupState(extensionState, [
+    "heading",
+    "bulletList",
+    "orderedList",
+    "taskList",
+    "blockquote",
+    "codeBlock",
+  ]);
+  const inlineGroup = getExtensionGroupState(extensionState, [
+    "bold",
+    "italic",
+    "underline",
+    "strike",
+    "inlineCode",
+  ]);
+  const colorGroup = getExtensionGroupState(extensionState, [
+    "textColor",
+    "highlight",
+  ]);
+  const alignGroup = getExtensionGroupState(extensionState, [
+    "alignLeft",
+    "alignCenter",
+    "alignRight",
+    "alignJustify",
+  ]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -267,12 +311,16 @@ function applyHighlightColor(color: string) {
         }}
         className="tr-notion-selection-bubble"
       >
+        {!turnGroup.hidden && (
         <div className="notion-bubble-popover-wrap">
           <button
             type="button"
             className="notion-bubble-select"
+            disabled={turnGroup.disabled}
             onClick={() =>
-              setActiveMenu((menu) => (menu === "turn" ? null : "turn"))
+              setActiveMenu((menu) =>
+                turnGroup.disabled ? null : menu === "turn" ? null : "turn",
+              )
             }
           >
             <span>{currentBlockLabel}</span>
@@ -295,6 +343,8 @@ function applyHighlightColor(color: string) {
               <TurnIntoItem
                 icon={<Heading1 className="size-4" />}
                 active={editorState.isHeading1}
+                disabled={control("heading").disabled}
+                hidden={control("heading").hidden}
                 label="Heading 1"
                 onClick={() => {
                   applyBlockTransform(() => {
@@ -305,6 +355,8 @@ function applyHighlightColor(color: string) {
               <TurnIntoItem
                 icon={<Heading2 className="size-4" />}
                 active={editorState.isHeading2}
+                disabled={control("heading").disabled}
+                hidden={control("heading").hidden}
                 label="Heading 2"
                 onClick={() => {
                   applyBlockTransform(() => {
@@ -315,6 +367,8 @@ function applyHighlightColor(color: string) {
               <TurnIntoItem
                 icon={<Heading3 className="size-4" />}
                 active={editorState.isHeading3}
+                disabled={control("heading").disabled}
+                hidden={control("heading").hidden}
                 label="Heading 3"
                 onClick={() => {
                   applyBlockTransform(() => {
@@ -325,6 +379,8 @@ function applyHighlightColor(color: string) {
               <TurnIntoItem
                 icon={<List className="size-4" />}
                 active={editorState.isBulletList}
+                disabled={control("bulletList").disabled}
+                hidden={control("bulletList").hidden}
                 label="Bulleted List"
                 onClick={() => {
                   applyBlockTransform(() => {
@@ -335,6 +391,8 @@ function applyHighlightColor(color: string) {
               <TurnIntoItem
                 icon={<ListOrdered className="size-4" />}
                 active={editorState.isOrderedList}
+                disabled={control("orderedList").disabled}
+                hidden={control("orderedList").hidden}
                 label="Numbered List"
                 onClick={() => {
                   applyBlockTransform(() => {
@@ -345,6 +403,8 @@ function applyHighlightColor(color: string) {
               <TurnIntoItem
                 icon={<CheckSquare className="size-4" />}
                 active={editorState.isTaskList}
+                disabled={control("taskList").disabled}
+                hidden={control("taskList").hidden}
                 label="To-do List"
                 onClick={() => {
                   applyBlockTransform(() => {
@@ -355,6 +415,8 @@ function applyHighlightColor(color: string) {
               <TurnIntoItem
                 icon={<Quote className="size-4" />}
                 active={editorState.isBlockquote}
+                disabled={control("blockquote").disabled}
+                hidden={control("blockquote").hidden}
                 label="Blockquote"
                 onClick={() => {
                   applyBlockTransform(() => {
@@ -365,6 +427,8 @@ function applyHighlightColor(color: string) {
               <TurnIntoItem
                 icon={<Code2 className="size-4" />}
                 active={editor.isActive("codeBlock")}
+                disabled={control("codeBlock").disabled}
+                hidden={control("codeBlock").hidden}
                 label="Code block"
                 onClick={() => {
                   applyBlockTransform(() => {
@@ -375,61 +439,92 @@ function applyHighlightColor(color: string) {
             </div>
           )}
         </div>
+        )}
 
-        <span className="notion-bubble-separator" />
+        {!turnGroup.hidden && !inlineGroup.hidden && (
+          <span className="notion-bubble-separator" />
+        )}
 
+        {!inlineGroup.hidden && (
+        <>
+        {!control("bold").hidden && (
         <BubbleIconButton
           label="Bold"
           active={editorState.isBold}
+          disabled={control("bold").disabled}
           onClick={() => editor.chain().focus().toggleBold().run()}
         >
           <Bold className="size-4" />
         </BubbleIconButton>
+        )}
+        {!control("italic").hidden && (
         <BubbleIconButton
           label="Italic"
           active={editorState.isItalic}
+          disabled={control("italic").disabled}
           onClick={() => editor.chain().focus().toggleItalic().run()}
         >
           <Italic className="size-4" />
         </BubbleIconButton>
+        )}
+        {!control("underline").hidden && (
         <BubbleIconButton
           label="Underline"
           active={editorState.isUnderlined}
+          disabled={control("underline").disabled}
           onClick={() => editor.chain().focus().toggleUnderline().run()}
         >
           <Underline className="size-4" />
         </BubbleIconButton>
+        )}
+        {!control("strike").hidden && (
         <BubbleIconButton
           label="Strike"
           active={editorState.isStrike}
+          disabled={control("strike").disabled}
           onClick={() => editor.chain().focus().toggleStrike().run()}
         >
           <Strikethrough className="size-4" />
         </BubbleIconButton>
+        )}
+        {!control("inlineCode").hidden && (
         <BubbleIconButton
           label="Code"
           active={editorState.isCode}
+          disabled={control("inlineCode").disabled}
           onClick={() => editor.chain().focus().toggleCode().run()}
         >
           <Code2 className="size-4" />
         </BubbleIconButton>
+        )}
+        </>
+        )}
 
-        <span className="notion-bubble-separator" />
+        {(!inlineGroup.hidden && (!control("link").hidden || !colorGroup.hidden)) && (
+          <span className="notion-bubble-separator" />
+        )}
 
+        {!control("link").hidden && (
         <BubbleIconButton
           label="Link"
           active={editorState.isLink}
+          disabled={control("link").disabled}
           onClick={handleLinkClick}
         >
           <Link2 className="size-4" />
         </BubbleIconButton>
+        )}
 
+        {!colorGroup.hidden && (
         <div className="notion-bubble-popover-wrap">
           <button
             type="button"
             className="notion-bubble-color-trigger"
+            disabled={colorGroup.disabled}
             onClick={() =>
-              setActiveMenu((menu) => (menu === "color" ? null : "color"))
+              setActiveMenu((menu) =>
+                colorGroup.disabled ? null : menu === "color" ? null : "color",
+              )
             }
           >
             <span
@@ -446,45 +541,73 @@ function applyHighlightColor(color: string) {
               <div className="notion-bubble-menu-label">Recently Used</div>
               {recentColors.length > 0 ? (
                 <div className="notion-bubble-recent-colors">
-                  {recentColors.map((item) => (
-                    <button
-                      key={`${item.type}-${item.color}`}
-                      type="button"
-                      className="notion-bubble-color-recent"
-                      style={getColorSwatchStyle(item)}
-                      onClick={() => {
-                        if (item.type === "text") {
-                          applyTextColor(item.color);
-                        } else {
-                          applyHighlightColor(item.color);
-                        }
-                      }}
-                    >
-                      {item.type === "text" ? "A" : null}
-                    </button>
-                  ))}
+                  {recentColors
+                    .filter((item) =>
+                      item.type === "text"
+                        ? !control("textColor").hidden
+                        : !control("highlight").hidden,
+                    )
+                    .map((item) => {
+                      const disabled =
+                        item.type === "text"
+                          ? control("textColor").disabled
+                          : control("highlight").disabled;
+
+                      return (
+                        <button
+                          key={`${item.type}-${item.color}`}
+                          type="button"
+                          disabled={disabled}
+                          className="notion-bubble-color-recent"
+                          style={getColorSwatchStyle(item)}
+                          onClick={() => {
+                            if (disabled) return;
+
+                            if (item.type === "text") {
+                              applyTextColor(item.color);
+                            } else {
+                              applyHighlightColor(item.color);
+                            }
+                          }}
+                        >
+                          {item.type === "text" ? "A" : null}
+                        </button>
+                      );
+                    })}
                 </div>
               ) : (
                 <div className="notion-bubble-recent-empty">No recent colors</div>
               )}
 
-              <div className="notion-bubble-menu-label">Text Color</div>
-              <ColorGrid
-                colors={TEXT_COLORS}
-                type="text"
-                onSelect={(color) => {
-                  applyTextColor(color);
-                }}
-              />
+              {!control("textColor").hidden && (
+                <>
+                  <div className="notion-bubble-menu-label">Text Color</div>
+                  <ColorGrid
+                    colors={TEXT_COLORS}
+                    disabled={control("textColor").disabled}
+                    type="text"
+                    onSelect={(color) => {
+                      applyTextColor(color);
+                    }}
+                  />
+                </>
+              )}
 
-              <div className="notion-bubble-menu-label">Highlight Color</div>
-            <ColorGrid
-              colors={HIGHLIGHT_COLORS}
-              type="highlight"
-              onSelect={(color) => {
-                applyHighlightColor(color);
-              }}
-            />
+              {!control("highlight").hidden && (
+                <>
+                  <div className="notion-bubble-menu-label">
+                    Highlight Color
+                  </div>
+                  <ColorGrid
+                    colors={HIGHLIGHT_COLORS}
+                    disabled={control("highlight").disabled}
+                    type="highlight"
+                    onSelect={(color) => {
+                      applyHighlightColor(color);
+                    }}
+                  />
+                </>
+              )}
 
               <div className="notion-bubble-menu-label">Custom Color</div>
               <div className="notion-bubble-custom-color">
@@ -502,35 +625,48 @@ function applyHighlightColor(color: string) {
                 />
               </div>
               <div className="notion-bubble-custom-color-actions">
+                {!control("textColor").hidden && (
                 <button
                   type="button"
+                  disabled={control("textColor").disabled}
                   onClick={() => {
                     applyTextColor(customColor);
                   }}
                 >
                   Text
                 </button>
+                )}
+                {!control("highlight").hidden && (
                 <button
                   type="button"
+                  disabled={control("highlight").disabled}
                   onClick={() => {
                     applyHighlightColor(customColor);
                   }}
                 >
                   Highlight
                 </button>
+                )}
               </div>
             </div>
           )}
         </div>
+        )}
 
-        <span className="notion-bubble-separator" />
+        {(!colorGroup.hidden || !control("link").hidden) && !alignGroup.hidden && (
+          <span className="notion-bubble-separator" />
+        )}
 
+        {!alignGroup.hidden && (
         <div className="notion-bubble-popover-wrap">
           <button
             type="button"
             className="notion-bubble-more"
+            disabled={alignGroup.disabled}
             onClick={() =>
-              setActiveMenu((menu) => (menu === "more" ? null : "more"))
+              setActiveMenu((menu) =>
+                alignGroup.disabled ? null : menu === "more" ? null : "more",
+              )
             }
           >
             <MoreVertical className="size-4" />
@@ -539,6 +675,8 @@ function applyHighlightColor(color: string) {
           {activeMenu === "more" && (
             <div className="notion-bubble-more-menu notion-bubble-local-menu notion-bubble-local-menu-end">
               <MenuButton
+                disabled={control("alignLeft").disabled}
+                hidden={control("alignLeft").hidden}
                 onClick={() => {
                   applyTextAlign("left");
                 }}
@@ -546,6 +684,8 @@ function applyHighlightColor(color: string) {
                 <AlignLeft className="size-4" /> Align left
               </MenuButton>
               <MenuButton
+                disabled={control("alignCenter").disabled}
+                hidden={control("alignCenter").hidden}
                 onClick={() => {
                   applyTextAlign("center");
                 }}
@@ -553,6 +693,8 @@ function applyHighlightColor(color: string) {
                 <AlignCenter className="size-4" /> Align center
               </MenuButton>
               <MenuButton
+                disabled={control("alignRight").disabled}
+                hidden={control("alignRight").hidden}
                 onClick={() => {
                   applyTextAlign("right");
                 }}
@@ -560,6 +702,8 @@ function applyHighlightColor(color: string) {
                 <AlignRight className="size-4" /> Align right
               </MenuButton>
               <MenuButton
+                disabled={control("alignJustify").disabled}
+                hidden={control("alignJustify").hidden}
                 onClick={() => {
                   applyTextAlign("justify");
                 }}
@@ -569,6 +713,7 @@ function applyHighlightColor(color: string) {
             </div>
           )}
         </div>
+        )}
       </TiptapBubbleMenu>
 
       <Dialog open={isLinkDialogOpen} onOpenChange={setIsLinkDialogOpen}>
@@ -613,6 +758,7 @@ function applyHighlightColor(color: string) {
 type BubbleIconButtonProps = {
   active?: boolean;
   children: React.ReactNode;
+  disabled?: boolean;
   label: string;
   onClick: () => void;
 };
@@ -620,6 +766,7 @@ type BubbleIconButtonProps = {
 function BubbleIconButton({
   active = false,
   children,
+  disabled = false,
   label,
   onClick,
 }: BubbleIconButtonProps) {
@@ -628,6 +775,7 @@ function BubbleIconButton({
       type="button"
       title={label}
       aria-label={label}
+      disabled={disabled}
       className={cn("notion-bubble-icon-button", active && "is-active")}
       onClick={onClick}
     >
@@ -638,15 +786,27 @@ function BubbleIconButton({
 
 type TurnIntoItemProps = {
   active: boolean;
+  disabled?: boolean;
+  hidden?: boolean;
   icon: React.ReactNode;
   label: string;
   onClick: () => void;
 };
 
-function TurnIntoItem({ active, icon, label, onClick }: TurnIntoItemProps) {
+function TurnIntoItem({
+  active,
+  disabled = false,
+  hidden = false,
+  icon,
+  label,
+  onClick,
+}: TurnIntoItemProps) {
+  if (hidden) return null;
+
   return (
     <button
       type="button"
+      disabled={disabled}
       className={cn("notion-bubble-turn-item text-sm", active && "is-active")}
       onClick={onClick}
     >
@@ -658,13 +818,23 @@ function TurnIntoItem({ active, icon, label, onClick }: TurnIntoItemProps) {
 
 type MenuButtonProps = {
   children: React.ReactNode;
+  disabled?: boolean;
+  hidden?: boolean;
   onClick: () => void;
 };
 
-function MenuButton({ children, onClick }: MenuButtonProps) {
+function MenuButton({
+  children,
+  disabled = false,
+  hidden = false,
+  onClick,
+}: MenuButtonProps) {
+  if (hidden) return null;
+
   return (
     <button
       type="button"
+      disabled={disabled}
       className="notion-bubble-menu-button"
       onClick={onClick}
     >
@@ -675,6 +845,7 @@ function MenuButton({ children, onClick }: MenuButtonProps) {
 
 type ColorGridProps = {
   colors: string[];
+  disabled?: boolean;
   type: "highlight" | "text";
   onSelect: (color: string) => void;
 };
@@ -694,7 +865,12 @@ function isLightColor(color: string) {
   return luminance > 0.88;
 }
 
-function ColorGrid({ colors, type, onSelect }: ColorGridProps) {
+function ColorGrid({
+  colors,
+  disabled = false,
+  type,
+  onSelect,
+}: ColorGridProps) {
   return (
     <div className="notion-bubble-color-grid">
       {colors.map((color) => {
@@ -704,6 +880,7 @@ function ColorGrid({ colors, type, onSelect }: ColorGridProps) {
           <button
             key={`${type}-${color}`}
             type="button"
+            disabled={disabled}
             className="notion-bubble-color-swatch"
             style={{
               backgroundColor:
