@@ -37,7 +37,7 @@ import {
   Trash2,
   type LucideIcon,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   DropdownMenu,
@@ -77,6 +77,17 @@ const defaultHeaderActivity: TableHeaderActivity = {
   headerColumn: false,
   headerCell: false,
 };
+
+function isSameHeaderActivity(
+  left: TableHeaderActivity,
+  right: TableHeaderActivity,
+) {
+  return (
+    left.headerRow === right.headerRow &&
+    left.headerColumn === right.headerColumn &&
+    left.headerCell === right.headerCell
+  );
+}
 
 function isHeaderCell(node: ProseMirrorNode | null | undefined) {
   return node?.type.name === "tableHeader";
@@ -405,6 +416,7 @@ function TableCellNodeView({ editor, node, getPos, selected }: NodeViewProps) {
   const [headerActivity, setHeaderActivity] = useState<TableHeaderActivity>(
     defaultHeaderActivity,
   );
+  const getPosRef = useRef(getPos);
   const isDarkTable =
     typeof editor.view.dom.closest === "function" &&
     !!editor.view.dom.closest(".tr-editor.dark");
@@ -413,11 +425,15 @@ function TableCellNodeView({ editor, node, getPos, selected }: NodeViewProps) {
       ? (editor.view.dom.closest(".tr-editor") as HTMLElement | null)
       : null;
 
+  useEffect(() => {
+    getPosRef.current = getPos;
+  }, [getPos]);
+
   const getCurrentCellPosition = () => {
-    if (typeof getPos !== "function") return null;
+    if (typeof getPosRef.current !== "function") return null;
 
     try {
-      const position = getPos();
+      const position = getPosRef.current();
       return typeof position === "number" ? position : null;
     } catch {
       return null;
@@ -425,7 +441,13 @@ function TableCellNodeView({ editor, node, getPos, selected }: NodeViewProps) {
   };
 
   const updateHeaderActivity = (cellPosition = getCurrentCellPosition()) => {
-    setHeaderActivity(getHeaderActivity(editor, cellPosition, node));
+    const nextHeaderActivity = getHeaderActivity(editor, cellPosition, node);
+
+    setHeaderActivity((previousHeaderActivity) =>
+      isSameHeaderActivity(previousHeaderActivity, nextHeaderActivity)
+        ? previousHeaderActivity
+        : nextHeaderActivity,
+    );
   };
 
   const selectCellContent = (cellPosition: number) => {
@@ -468,25 +490,43 @@ function TableCellNodeView({ editor, node, getPos, selected }: NodeViewProps) {
 
   useEffect(() => {
     const updateCellActivity = () => {
-      if (typeof getPos !== "function") {
-        setIsCurrentCellActive(false);
+      if (typeof getPosRef.current !== "function") {
+        setIsCurrentCellActive((previousValue) =>
+          previousValue ? false : previousValue,
+        );
         return;
       }
 
-      const position = getPos();
+      const position = getPosRef.current();
 
       if (typeof position !== "number") {
-        setIsCurrentCellActive(false);
-        setHeaderActivity(defaultHeaderActivity);
+        setIsCurrentCellActive((previousValue) =>
+          previousValue ? false : previousValue,
+        );
+        setHeaderActivity((previousHeaderActivity) =>
+          isSameHeaderActivity(previousHeaderActivity, defaultHeaderActivity)
+            ? previousHeaderActivity
+            : defaultHeaderActivity,
+        );
         return;
       }
 
       const { from, to } = editor.state.selection;
       const nodeFrom = position;
       const nodeTo = position + node.nodeSize;
+      const nextIsCurrentCellActive = nodeFrom <= from && to <= nodeTo;
+      const nextHeaderActivity = getHeaderActivity(editor, position, node);
 
-      setIsCurrentCellActive(nodeFrom <= from && to <= nodeTo);
-      setHeaderActivity(getHeaderActivity(editor, position, node));
+      setIsCurrentCellActive((previousValue) =>
+        previousValue === nextIsCurrentCellActive
+          ? previousValue
+          : nextIsCurrentCellActive,
+      );
+      setHeaderActivity((previousHeaderActivity) =>
+        isSameHeaderActivity(previousHeaderActivity, nextHeaderActivity)
+          ? previousHeaderActivity
+          : nextHeaderActivity,
+      );
     };
 
     updateCellActivity();
@@ -495,7 +535,7 @@ function TableCellNodeView({ editor, node, getPos, selected }: NodeViewProps) {
     return () => {
       editor.off("selectionUpdate", updateCellActivity);
     };
-  }, [editor, getPos, node.nodeSize]);
+  }, [editor, node]);
 
   const showMenu =
     (isCurrentCellActive || selected || isMenuOpen) && editor.isEditable;
