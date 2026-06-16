@@ -190,6 +190,21 @@ export type TiptapEditorReturnTypes = {
   editor: Editor;
 
   /**
+   * Whether the Tiptap editor instance is still initializing.
+   *
+   * Returns `true` while `useEditor` has not created an editor instance yet,
+   * and `false` once `editor` is available.
+   *
+   * @example
+   * ```tsx
+   * const { editor, isEditorLoading } = useTiptapEditor();
+   *
+   * if (isEditorLoading) return <div>Loading editor...</div>;
+   * ```
+   */
+  isEditorLoading: boolean;
+
+  /**
    * Returns the current editor content as both
    * Tiptap JSON and serialized HTML.
    *

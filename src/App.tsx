@@ -14,18 +14,13 @@ export default function App() {
         editor={editor}
         enablePreview={true}
         className="max-w-5xl mx-auto h-screen py-5"
-        enableTableOfContents
-        tableOfContentsPosition="right"
         enableModeToggle
         theme="violet"
-        extensionState={{
-          bold: "disable",
-        }}
       />
 
       {/* <NotionEditor
         editor={editor}
-        className="max-w-5xl mx-auto min-h-screen bg-red-500"
+        className="max-w-5xl mx-auto min-h-screen"
       /> */}
 
       {/* <div className="py-5 px-5 max-w-4xl mx-auto ">

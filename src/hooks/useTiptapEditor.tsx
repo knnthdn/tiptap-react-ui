@@ -363,6 +363,7 @@ export default function useTiptapEditor({
 
   return {
     editor,
+    isEditorLoading: !editor,
     getEditorContent,
   };
 }
