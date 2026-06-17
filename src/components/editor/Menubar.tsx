@@ -780,7 +780,9 @@ export default function Menubar({
 
         {/* ── GROUP 3: TYPOGRAPHY (Font Family + Font Size + Headings) ── */}
         {!typographyGroup.hidden && (
-          <div className={groupClassName(["heading", "fontFamily", "fontSize"])}>
+          <div
+            className={groupClassName(["heading", "fontFamily", "fontSize"])}
+          >
             {!control("heading").hidden && (
               <DropdownMenu
                 open={isTextBlockMenuOpen}
@@ -794,7 +796,7 @@ export default function Menubar({
                   <Button
                     variant="outline"
                     disabled={control("heading").disabled}
-                    className="h-7 cursor-pointer px-2 text-foreground sm:h-8"
+                    className="h-7 w-12 cursor-pointer justify-between px-2 text-foreground sm:h-8"
                   >
                     {editorState.isHeading1 && <HeadingsIcon label="1" />}
 
@@ -808,7 +810,9 @@ export default function Menubar({
 
                     {editorState.isHeading6 && <HeadingsIcon label="6" />}
 
-                    {!editor.isActive("heading") && <span>H</span>}
+                    {!editor.isActive("heading") && (
+                      <span className="inline-flex w-4">H</span>
+                    )}
                     <ChevronDown />
                   </Button>
                 </DropdownMenuTrigger>
@@ -851,10 +855,12 @@ export default function Menubar({
                   <Button
                     variant="outline"
                     disabled={control("fontFamily").disabled}
-                    className="h-7 min-w-24 cursor-pointer px-2 text-foreground sm:h-8 sm:min-w-28"
+                    className="h-7 w-24 cursor-pointer justify-between px-2 text-foreground sm:h-8 sm:w-28"
                   >
-                    {activeFontFamily.label}
-                    <ChevronDown />
+                    <span className="min-w-0 flex-1 truncate text-left">
+                      {activeFontFamily.label}
+                    </span>
+                    <ChevronDown className="shrink-0" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="min-w-50 max-h-80 px-0 py-0 overflow-auto">
@@ -909,7 +915,14 @@ export default function Menubar({
 
         {/* ── GROUP 4: INLINE FORMATTING (Bold, Italic, Underline, Strikethrough) ── */}
         {!inlineGroup.hidden && (
-          <div className={groupClassName(["bold", "italic", "underline", "strike"])}>
+          <div
+            className={groupClassName([
+              "bold",
+              "italic",
+              "underline",
+              "strike",
+            ])}
+          >
             {!control("bold").hidden && (
               <MenuBottons
                 onClick={() => editor.chain().focus().toggleBold().run()}
@@ -952,220 +965,220 @@ export default function Menubar({
 
         {/* ── GROUP 5: TEXT COLOR & HIGHLIGHT ── */}
         {!colorGroup.hidden && (
-        <div className={groupClassName(["textColor", "highlight"])}>
-          {/* TEXT COLOR */}
-          {!control("textColor").hidden && (
-          <div
-            className={cn(
-              "inline-flex items-center rounded-md border",
-              editorState.textColor && "border-border",
-            )}
-          >
-            <Button
-              title="Apply text color"
-              size="icon"
-              onClick={toggleTextColor}
-              disabled={control("textColor").disabled}
-              className={cn(
-                "relative size-7 cursor-pointer rounded-r-none border-0 bg-transparent px-2 sm:size-8",
-                editorState.textColor &&
-                  "bg-foreground shadow-xs hover:bg-foreground dark:hover:bg-foreground",
-              )}
-              data-active={!!editorState.textColor}
-            >
-              <CaseSensitive
+          <div className={groupClassName(["textColor", "highlight"])}>
+            {/* TEXT COLOR */}
+            {!control("textColor").hidden && (
+              <div
                 className={cn(
-                  "size-4",
-                  editorState.textColor
-                    ? "text-primary-foreground"
-                    : "text-foreground",
+                  "inline-flex items-center rounded-md border",
+                  editorState.textColor && "border-border",
                 )}
-              />
-              <span
-                className={cn(
-                  "absolute right-1.5 bottom-0.5 left-1.5 h-0.5 rounded-full",
-                  editorState.textColor && "h-1",
-                )}
-                style={{ backgroundColor: currentTextColor }}
-              />
-            </Button>
-            <DropdownMenu
-              open={isTextColorMenuOpen}
-              onOpenChange={(open) =>
-                setIsTextColorMenuOpen(
-                  control("textColor").disabled ? false : open,
-                )
-              }
-            >
-              <DropdownMenuTrigger asChild>
+              >
                 <Button
-                  title="Choose text color"
+                  title="Apply text color"
                   size="icon"
-                  variant="ghost"
+                  onClick={toggleTextColor}
                   disabled={control("textColor").disabled}
-                  className="size-7 cursor-pointer rounded-l-none border-0 border-l border-border/50 bg-transparent px-1.5 sm:size-8"
+                  className={cn(
+                    "relative size-7 cursor-pointer rounded-r-none border-0 bg-transparent px-2 sm:size-8",
+                    editorState.textColor &&
+                      "bg-foreground shadow-xs hover:bg-foreground dark:hover:bg-foreground",
+                  )}
+                  data-active={!!editorState.textColor}
                 >
-                  <ChevronDown className="size-3.5 text-foreground" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="start"
-                sideOffset={8}
-                className="w-56"
-              >
-                <DropdownMenuLabel>Text color</DropdownMenuLabel>
-                <div className="grid grid-cols-5 gap-2 px-1 py-2">
-                  {TEXT_COLOR_PRESETS.map((color) => (
-                    <button
-                      key={color}
-                      type="button"
-                      title={color}
-                      aria-label={color}
-                      onClick={() => applyTextColor(color)}
-                      className={cn(
-                        "size-8 cursor-pointer rounded-md border border-border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                        currentTextColor.toLowerCase() ===
-                          color.toLowerCase() && "ring-2 ring-ring",
-                      )}
-                      style={{ backgroundColor: color }}
-                    />
-                  ))}
-                </div>
-                <DropdownMenuSeparator />
-                <div className="px-1 py-1 space-y-1">
-                  <input
-                    type="text"
-                    value={customTextColorInput}
-                    onChange={(event) =>
-                      setCustomTextColorInput(event.target.value)
-                    }
-                    onKeyDown={(event) => {
-                      event.stopPropagation();
-                      if (event.key === "Enter") {
-                        event.preventDefault();
-                        applyTextColor(customTextColorInput);
-                      }
-                    }}
-                    placeholder="#111827"
-                    className="flex h-8 w-full rounded-md border border-input bg-transparent px-2 text-sm shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                  <CaseSensitive
+                    className={cn(
+                      "size-4",
+                      editorState.textColor
+                        ? "text-primary-foreground"
+                        : "text-foreground",
+                    )}
                   />
-                  <button
-                    type="button"
-                    onClick={removeTextColor}
-                    className="flex h-8 w-full items-center justify-center rounded-md border border-input bg-transparent px-2 text-xs text-muted-foreground transition hover:bg-accent hover:text-accent-foreground"
+                  <span
+                    className={cn(
+                      "absolute right-1.5 bottom-0.5 left-1.5 h-0.5 rounded-full",
+                      editorState.textColor && "h-1",
+                    )}
+                    style={{ backgroundColor: currentTextColor }}
+                  />
+                </Button>
+                <DropdownMenu
+                  open={isTextColorMenuOpen}
+                  onOpenChange={(open) =>
+                    setIsTextColorMenuOpen(
+                      control("textColor").disabled ? false : open,
+                    )
+                  }
+                >
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      title="Choose text color"
+                      size="icon"
+                      variant="ghost"
+                      disabled={control("textColor").disabled}
+                      className="size-7 cursor-pointer rounded-l-none border-0 border-l border-border/50 bg-transparent px-1.5 sm:size-8"
+                    >
+                      <ChevronDown className="size-3.5 text-foreground" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    align="start"
+                    sideOffset={8}
+                    className="w-56"
                   >
-                    Remove color
-                  </button>
-                </div>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-          )}
-
-          {/* HIGHLIGHT */}
-          {!control("highlight").hidden && (
-          <div
-            className={cn(
-              "inline-flex items-center rounded-md border",
-              editorState.isHighlight && "border-border",
+                    <DropdownMenuLabel>Text color</DropdownMenuLabel>
+                    <div className="grid grid-cols-5 gap-2 px-1 py-2">
+                      {TEXT_COLOR_PRESETS.map((color) => (
+                        <button
+                          key={color}
+                          type="button"
+                          title={color}
+                          aria-label={color}
+                          onClick={() => applyTextColor(color)}
+                          className={cn(
+                            "size-8 cursor-pointer rounded-md border border-border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                            currentTextColor.toLowerCase() ===
+                              color.toLowerCase() && "ring-2 ring-ring",
+                          )}
+                          style={{ backgroundColor: color }}
+                        />
+                      ))}
+                    </div>
+                    <DropdownMenuSeparator />
+                    <div className="px-1 py-1 space-y-1">
+                      <input
+                        type="text"
+                        value={customTextColorInput}
+                        onChange={(event) =>
+                          setCustomTextColorInput(event.target.value)
+                        }
+                        onKeyDown={(event) => {
+                          event.stopPropagation();
+                          if (event.key === "Enter") {
+                            event.preventDefault();
+                            applyTextColor(customTextColorInput);
+                          }
+                        }}
+                        placeholder="#111827"
+                        className="flex h-8 w-full rounded-md border border-input bg-transparent px-2 text-sm shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                      />
+                      <button
+                        type="button"
+                        onClick={removeTextColor}
+                        className="flex h-8 w-full items-center justify-center rounded-md border border-input bg-transparent px-2 text-xs text-muted-foreground transition hover:bg-accent hover:text-accent-foreground"
+                      >
+                        Remove color
+                      </button>
+                    </div>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             )}
-          >
-            <Button
-              title="Highlight (CTRL + SHFT + H)"
-              size="icon"
-              onClick={() => applyHighlightColor(currentHighlightColor)}
-              disabled={control("highlight").disabled}
-              className={cn(
-                "relative size-7 cursor-pointer rounded-r-none border-0 bg-transparent px-2 sm:size-8",
-                editorState.isHighlight &&
-                  "bg-foreground shadow-xs hover:bg-foreground dark:hover:bg-foreground",
-              )}
-              data-active={editorState.isHighlight}
-            >
-              <Highlighter
-                className={cn(
-                  "size-4",
-                  editorState.isHighlight
-                    ? "text-primary-foreground"
-                    : "text-foreground",
-                )}
-              />
-              <span
-                className={cn(
-                  "absolute right-1.5 bottom-0.5 left-1.5 h-0.5 rounded-full",
-                  editorState.isHighlight && "h-1",
-                )}
-                style={{ backgroundColor: currentHighlightColor }}
-              />
-            </Button>
-            <DropdownMenu
-              open={isHighlightMenuOpen}
-              onOpenChange={(open) =>
-                setIsHighlightMenuOpen(
-                  control("highlight").disabled ? false : open,
-                )
-              }
-            >
-              <DropdownMenuTrigger asChild>
-                <Button
-                  title="Choose highlight color"
-                  size="icon"
-                  variant="ghost"
-                  disabled={control("highlight").disabled}
-                  className="size-7 cursor-pointer rounded-l-none border-0 border-l border-border/50 bg-transparent px-1.5 sm:size-8"
-                >
-                  <ChevronDown className="size-3.5 text-foreground" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="start"
-                sideOffset={8}
-                className="w-56"
-              >
-                <DropdownMenuLabel>Highlight color</DropdownMenuLabel>
-                <div className="grid grid-cols-5 gap-2 px-1 py-2">
-                  {HIGHLIGHT_PRESETS.map((color) => (
-                    <button
-                      key={color}
-                      type="button"
-                      title={color}
-                      aria-label={color}
-                      onClick={() => setHighlightColorValue(color)}
-                      className={cn(
-                        "size-8 cursor-pointer rounded-md border border-border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                        currentHighlightColor.toLowerCase() ===
-                          color.toLowerCase() && "ring-2 ring-ring",
-                      )}
-                      style={{ backgroundColor: color }}
-                    />
-                  ))}
-                </div>
-                <DropdownMenuSeparator />
-                <div className="px-1 py-1">
-                  <input
-                    type="text"
-                    value={customHighlightColor}
-                    onChange={(event) =>
-                      setCustomHighlightColor(event.target.value)
-                    }
-                    onKeyDown={(event) => {
-                      event.stopPropagation();
-                      if (event.key === "Enter") {
-                        event.preventDefault();
-                        setHighlightColorValue(customHighlightColor);
-                      }
-                    }}
-                    placeholder="#ffcc00"
-                    className="flex h-8 w-full rounded-md border border-input bg-transparent px-2 text-sm shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-                  />
-                </div>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-          )}
 
-          <Separator orientation="vertical" className="ml-1" />
-        </div>
+            {/* HIGHLIGHT */}
+            {!control("highlight").hidden && (
+              <div
+                className={cn(
+                  "inline-flex items-center rounded-md border",
+                  editorState.isHighlight && "border-border",
+                )}
+              >
+                <Button
+                  title="Highlight (CTRL + SHFT + H)"
+                  size="icon"
+                  onClick={() => applyHighlightColor(currentHighlightColor)}
+                  disabled={control("highlight").disabled}
+                  className={cn(
+                    "relative size-7 cursor-pointer rounded-r-none border-0 bg-transparent px-2 sm:size-8",
+                    editorState.isHighlight &&
+                      "bg-foreground shadow-xs hover:bg-foreground dark:hover:bg-foreground",
+                  )}
+                  data-active={editorState.isHighlight}
+                >
+                  <Highlighter
+                    className={cn(
+                      "size-4",
+                      editorState.isHighlight
+                        ? "text-primary-foreground"
+                        : "text-foreground",
+                    )}
+                  />
+                  <span
+                    className={cn(
+                      "absolute right-1.5 bottom-0.5 left-1.5 h-0.5 rounded-full",
+                      editorState.isHighlight && "h-1",
+                    )}
+                    style={{ backgroundColor: currentHighlightColor }}
+                  />
+                </Button>
+                <DropdownMenu
+                  open={isHighlightMenuOpen}
+                  onOpenChange={(open) =>
+                    setIsHighlightMenuOpen(
+                      control("highlight").disabled ? false : open,
+                    )
+                  }
+                >
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      title="Choose highlight color"
+                      size="icon"
+                      variant="ghost"
+                      disabled={control("highlight").disabled}
+                      className="size-7 cursor-pointer rounded-l-none border-0 border-l border-border/50 bg-transparent px-1.5 sm:size-8"
+                    >
+                      <ChevronDown className="size-3.5 text-foreground" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    align="start"
+                    sideOffset={8}
+                    className="w-56"
+                  >
+                    <DropdownMenuLabel>Highlight color</DropdownMenuLabel>
+                    <div className="grid grid-cols-5 gap-2 px-1 py-2">
+                      {HIGHLIGHT_PRESETS.map((color) => (
+                        <button
+                          key={color}
+                          type="button"
+                          title={color}
+                          aria-label={color}
+                          onClick={() => setHighlightColorValue(color)}
+                          className={cn(
+                            "size-8 cursor-pointer rounded-md border border-border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                            currentHighlightColor.toLowerCase() ===
+                              color.toLowerCase() && "ring-2 ring-ring",
+                          )}
+                          style={{ backgroundColor: color }}
+                        />
+                      ))}
+                    </div>
+                    <DropdownMenuSeparator />
+                    <div className="px-1 py-1">
+                      <input
+                        type="text"
+                        value={customHighlightColor}
+                        onChange={(event) =>
+                          setCustomHighlightColor(event.target.value)
+                        }
+                        onKeyDown={(event) => {
+                          event.stopPropagation();
+                          if (event.key === "Enter") {
+                            event.preventDefault();
+                            setHighlightColorValue(customHighlightColor);
+                          }
+                        }}
+                        placeholder="#ffcc00"
+                        className="flex h-8 w-full rounded-md border border-input bg-transparent px-2 text-sm shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                      />
+                    </div>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            )}
+
+            <Separator orientation="vertical" className="ml-1" />
+          </div>
         )}
 
         {/* ── GROUP 6: LINK & INLINE CODE ── */}
@@ -1195,143 +1208,151 @@ export default function Menubar({
 
         {/* ── GROUP 7: TEXT ALIGNMENT ── */}
         {!alignGroup.hidden && (
-        <div className={groupClassName([
-          "alignLeft",
-          "alignCenter",
-          "alignRight",
-          "alignJustify",
-        ])}>
-          {/* Desktop: individual buttons */}
-          <div className="hidden shrink-0 items-center gap-1 md:flex">
-            {!control("alignLeft").hidden && (
-              <MenuBottons
-                onClick={() =>
-                  editor.chain().focus().toggleTextAlign("left").run()
-                }
-                state={editorState.isAlignLeft}
-                Icon={TextAlignStart}
-                title="Text Align Left (CTRL + SHFT + L)"
-                disabled={control("alignLeft").disabled}
-              />
-            )}
-            {!control("alignCenter").hidden && (
-              <MenuBottons
-                onClick={() =>
-                  editor.chain().focus().toggleTextAlign("center").run()
-                }
-                state={editorState.isAlignCenter}
-                Icon={TextAlignCenter}
-                title="Text Align Center (CTRL + SHFT + E)"
-                disabled={control("alignCenter").disabled}
-              />
-            )}
-            {!control("alignRight").hidden && (
-              <MenuBottons
-                onClick={() =>
-                  editor.chain().focus().toggleTextAlign("right").run()
-                }
-                state={editorState.isAlignRight}
-                Icon={TextAlignEnd}
-                title="Text Align Right (CTRL + SHFT + R)"
-                disabled={control("alignRight").disabled}
-              />
-            )}
-            {!control("alignJustify").hidden && (
-              <MenuBottons
-                onClick={() =>
-                  editor.chain().focus().toggleTextAlign("justify").run()
-                }
-                state={editorState.isAlignJustify}
-                Icon={TextAlignJustify}
-                title="Text Align Justify (CTRL + SHFT + J)"
-                disabled={control("alignJustify").disabled}
-              />
-            )}
-          </div>
-
-          {/* Mobile: dropdown */}
-          <div className="flex shrink-0 items-center gap-1 md:hidden">
-            <DropdownMenu
-              open={isAlignMenuOpen}
-              onOpenChange={(open) =>
-                setIsAlignMenuOpen(alignGroup.disabled ? false : open)
-              }
-            >
-              <DropdownMenuTrigger asChild>
-                <Button
-                  title="Align"
-                  variant="outline"
-                  // size="icon"
-                  disabled={alignGroup.disabled}
-                  className={cn(
-                    "h-7 cursor-pointer bg-transparent px-2 sm:h-8",
-                    isAnyAlignActive &&
-                      "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground dark:hover:bg-primary dark:hover:text-primary-foreground",
-                  )}
-                >
-                  <ActiveAlignIcon className={cn("size-4")} />
-                  <ChevronDown size={1} />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="px-0 py-0 w-48">
-                {!control("alignLeft").hidden && (
-                <TextBlockButton
-                  label="Align Left"
-                  onClick={() => {
-                    editor.chain().focus().toggleTextAlign("left").run();
-                    setIsAlignMenuOpen(false);
-                  }}
-                  disabled={control("alignLeft").disabled}
+          <div
+            className={groupClassName([
+              "alignLeft",
+              "alignCenter",
+              "alignRight",
+              "alignJustify",
+            ])}
+          >
+            {/* Desktop: individual buttons */}
+            <div className="hidden shrink-0 items-center gap-1 md:flex">
+              {!control("alignLeft").hidden && (
+                <MenuBottons
+                  onClick={() =>
+                    editor.chain().focus().toggleTextAlign("left").run()
+                  }
                   state={editorState.isAlignLeft}
+                  Icon={TextAlignStart}
                   title="Text Align Left (CTRL + SHFT + L)"
+                  disabled={control("alignLeft").disabled}
                 />
-                )}
-                {!control("alignCenter").hidden && (
-                <TextBlockButton
-                  label="Align Center"
-                  onClick={() => {
-                    editor.chain().focus().toggleTextAlign("center").run();
-                    setIsAlignMenuOpen(false);
-                  }}
-                  disabled={control("alignCenter").disabled}
+              )}
+              {!control("alignCenter").hidden && (
+                <MenuBottons
+                  onClick={() =>
+                    editor.chain().focus().toggleTextAlign("center").run()
+                  }
                   state={editorState.isAlignCenter}
+                  Icon={TextAlignCenter}
                   title="Text Align Center (CTRL + SHFT + E)"
+                  disabled={control("alignCenter").disabled}
                 />
-                )}
-                {!control("alignRight").hidden && (
-                <TextBlockButton
-                  label="Align Right"
-                  onClick={() => {
-                    editor.chain().focus().toggleTextAlign("right").run();
-                    setIsAlignMenuOpen(false);
-                  }}
-                  disabled={control("alignRight").disabled}
+              )}
+              {!control("alignRight").hidden && (
+                <MenuBottons
+                  onClick={() =>
+                    editor.chain().focus().toggleTextAlign("right").run()
+                  }
                   state={editorState.isAlignRight}
+                  Icon={TextAlignEnd}
                   title="Text Align Right (CTRL + SHFT + R)"
+                  disabled={control("alignRight").disabled}
                 />
-                )}
-                {!control("alignJustify").hidden && (
-                <TextBlockButton
-                  label="Align Justify"
-                  onClick={() => {
-                    editor.chain().focus().toggleTextAlign("justify").run();
-                    setIsAlignMenuOpen(false);
-                  }}
-                  disabled={control("alignJustify").disabled}
+              )}
+              {!control("alignJustify").hidden && (
+                <MenuBottons
+                  onClick={() =>
+                    editor.chain().focus().toggleTextAlign("justify").run()
+                  }
                   state={editorState.isAlignJustify}
+                  Icon={TextAlignJustify}
                   title="Text Align Justify (CTRL + SHFT + J)"
+                  disabled={control("alignJustify").disabled}
                 />
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
+              )}
+            </div>
+
+            {/* Mobile: dropdown */}
+            <div className="flex shrink-0 items-center gap-1 md:hidden">
+              <DropdownMenu
+                open={isAlignMenuOpen}
+                onOpenChange={(open) =>
+                  setIsAlignMenuOpen(alignGroup.disabled ? false : open)
+                }
+              >
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    title="Align"
+                    variant="outline"
+                    // size="icon"
+                    disabled={alignGroup.disabled}
+                    className={cn(
+                      "h-7 cursor-pointer bg-transparent px-2 sm:h-8",
+                      isAnyAlignActive &&
+                        "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground dark:hover:bg-primary dark:hover:text-primary-foreground",
+                    )}
+                  >
+                    <ActiveAlignIcon className={cn("size-4")} />
+                    <ChevronDown size={1} />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="px-0 py-0 w-48">
+                  {!control("alignLeft").hidden && (
+                    <TextBlockButton
+                      label="Align Left"
+                      onClick={() => {
+                        editor.chain().focus().toggleTextAlign("left").run();
+                        setIsAlignMenuOpen(false);
+                      }}
+                      disabled={control("alignLeft").disabled}
+                      state={editorState.isAlignLeft}
+                      title="Text Align Left (CTRL + SHFT + L)"
+                    />
+                  )}
+                  {!control("alignCenter").hidden && (
+                    <TextBlockButton
+                      label="Align Center"
+                      onClick={() => {
+                        editor.chain().focus().toggleTextAlign("center").run();
+                        setIsAlignMenuOpen(false);
+                      }}
+                      disabled={control("alignCenter").disabled}
+                      state={editorState.isAlignCenter}
+                      title="Text Align Center (CTRL + SHFT + E)"
+                    />
+                  )}
+                  {!control("alignRight").hidden && (
+                    <TextBlockButton
+                      label="Align Right"
+                      onClick={() => {
+                        editor.chain().focus().toggleTextAlign("right").run();
+                        setIsAlignMenuOpen(false);
+                      }}
+                      disabled={control("alignRight").disabled}
+                      state={editorState.isAlignRight}
+                      title="Text Align Right (CTRL + SHFT + R)"
+                    />
+                  )}
+                  {!control("alignJustify").hidden && (
+                    <TextBlockButton
+                      label="Align Justify"
+                      onClick={() => {
+                        editor.chain().focus().toggleTextAlign("justify").run();
+                        setIsAlignMenuOpen(false);
+                      }}
+                      disabled={control("alignJustify").disabled}
+                      state={editorState.isAlignJustify}
+                      title="Text Align Justify (CTRL + SHFT + J)"
+                    />
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+            <Separator orientation="vertical" />
           </div>
-          <Separator orientation="vertical" />
-        </div>
         )}
 
         {/* ── GROUP 8: LISTS ── */}
         {!listGroup.hidden && (
-          <div className={groupClassName(["bulletList", "orderedList", "taskList"])}>
+          <div
+            className={groupClassName([
+              "bulletList",
+              "orderedList",
+              "taskList",
+            ])}
+          >
             {!control("bulletList").hidden && (
               <MenuBottons
                 onClick={() => editor.chain().focus().toggleBulletList().run()}
@@ -1365,12 +1386,14 @@ export default function Menubar({
 
         {/* ── GROUP 9: BLOCK ELEMENTS ── */}
         {!blockGroup.hidden && (
-          <div className={groupClassName([
-            "blockquote",
-            "codeBlock",
-            "horizontalRule",
-            "hardBreak",
-          ])}>
+          <div
+            className={groupClassName([
+              "blockquote",
+              "codeBlock",
+              "horizontalRule",
+              "hardBreak",
+            ])}
+          >
             {!control("blockquote").hidden && (
               <MenuBottons
                 onClick={() => editor.chain().focus().toggleBlockquote().run()}
@@ -1413,149 +1436,164 @@ export default function Menubar({
 
         {/* ── GROUP 10: INSERT (Table, Image, YouTube) ── */}
         {!insertGroup.hidden && (
-        <div className={groupClassName(["table", "image", "imageUpload", "youtube"])}>
-          {!control("table").hidden && (
-          <DropdownMenu
-            open={isInsertTableDialogOpen}
-            onOpenChange={(open) => {
-              if (control("table").disabled) {
-                setIsInsertTableDialogOpen(false);
-                return;
-              }
-
-              if (open) {
-                resetTableDialog();
-              } else {
-                setIsInsertTableDialogOpen(false);
-              }
-            }}
+          <div
+            className={groupClassName([
+              "table",
+              "image",
+              "imageUpload",
+              "youtube",
+            ])}
           >
-            <DropdownMenuTrigger asChild>
-              <Button
-                title="Insert table"
-                variant="ghost"
-                size="icon"
-                disabled={control("table").disabled}
-                className={cn(
-                  "size-7 cursor-pointer bg-transparent sm:size-8",
-                  editorState.isTable &&
-                    "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground dark:hover:bg-primary dark:hover:text-primary-foreground",
-                )}
-              >
-                <Table2
-                  className={cn(
-                    "size-4",
-                    editorState.isTable
-                      ? "text-primary-foreground"
-                      : "text-foreground",
-                  )}
-                />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="start"
-              sideOffset={10}
-              className="tr-table-picker-dropdown w-auto p-3"
-              onCloseAutoFocus={(event) => event.preventDefault()}
-            >
-              <div
-                className="tr-table-picker"
-                onMouseLeave={() => setHoveredTableSize(null)}
-              >
-                {Array.from({ length: TABLE_PICKER_ROWS }, (_, rowIndex) =>
-                  Array.from({ length: TABLE_PICKER_COLS }, (_, colIndex) => {
-                    const rows = rowIndex + 1;
-                    const cols = colIndex + 1;
-                    const isActive =
-                      rows <= selectedTableRows && cols <= selectedTableCols;
+            {!control("table").hidden && (
+              <DropdownMenu
+                open={isInsertTableDialogOpen}
+                onOpenChange={(open) => {
+                  if (control("table").disabled) {
+                    setIsInsertTableDialogOpen(false);
+                    return;
+                  }
 
-                    return (
-                      <button
-                        key={`${rows}-${cols}`}
-                        type="button"
-                        aria-label={`Insert ${rows} by ${cols} table`}
-                        className={cn(
-                          "tr-table-picker-cell",
-                          isActive && "tr-table-picker-cell-active",
-                        )}
-                        onFocus={() => setHoveredTableSize({ rows, cols })}
-                        onMouseEnter={() => setHoveredTableSize({ rows, cols })}
-                        onClick={() => handleInsertTable(rows, cols)}
-                      />
-                    );
-                  }),
-                )}
-              </div>
-
-              <div className="tr-table-picker-meta">
-                <label
-                  htmlFor="table-header-row"
-                  className="tr-table-picker-checkbox"
-                  onClick={(event) => event.stopPropagation()}
-                >
-                  <Input
-                    id="table-header-row"
-                    type="checkbox"
-                    checked={tableWithHeaderRow}
-                    onChange={(event) =>
-                      setTableWithHeaderRow(event.target.checked)
-                    }
-                    className="size-4"
-                  />
-                  Include Header
-                </label>
-
-                <span className="tr-table-picker-size">
-                  {selectedTableRows} x {selectedTableCols}
-                </span>
-              </div>
-
-              <button
-                type="button"
-                className="tr-table-picker-delete"
-                disabled={!editorState.isTable}
-                onClick={() => {
-                  editor.chain().focus().deleteTable().run();
-                  setIsInsertTableDialogOpen(false);
+                  if (open) {
+                    resetTableDialog();
+                  } else {
+                    setIsInsertTableDialogOpen(false);
+                  }
                 }}
               >
-                Delete Table
-              </button>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          )}
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    title="Insert table"
+                    variant="ghost"
+                    size="icon"
+                    disabled={control("table").disabled}
+                    className={cn(
+                      "size-7 cursor-pointer bg-transparent sm:size-8",
+                      editorState.isTable &&
+                        "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground dark:hover:bg-primary dark:hover:text-primary-foreground",
+                    )}
+                  >
+                    <Table2
+                      className={cn(
+                        "size-4",
+                        editorState.isTable
+                          ? "text-primary-foreground"
+                          : "text-foreground",
+                      )}
+                    />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="start"
+                  sideOffset={10}
+                  className="tr-table-picker-dropdown w-auto p-3"
+                  onCloseAutoFocus={(event) => event.preventDefault()}
+                >
+                  <div
+                    className="tr-table-picker"
+                    onMouseLeave={() => setHoveredTableSize(null)}
+                  >
+                    {Array.from({ length: TABLE_PICKER_ROWS }, (_, rowIndex) =>
+                      Array.from(
+                        { length: TABLE_PICKER_COLS },
+                        (_, colIndex) => {
+                          const rows = rowIndex + 1;
+                          const cols = colIndex + 1;
+                          const isActive =
+                            rows <= selectedTableRows &&
+                            cols <= selectedTableCols;
 
-          {!control("image").hidden && (
-          <MenuBottons
-            onClick={handleImageClick}
-            state={editorState.isImage}
-            Icon={ImagePlus}
-            title="Insert remote image"
-            disabled={control("image").disabled}
-          />
-          )}
+                          return (
+                            <button
+                              key={`${rows}-${cols}`}
+                              type="button"
+                              aria-label={`Insert ${rows} by ${cols} table`}
+                              className={cn(
+                                "tr-table-picker-cell",
+                                isActive && "tr-table-picker-cell-active",
+                              )}
+                              onFocus={() =>
+                                setHoveredTableSize({ rows, cols })
+                              }
+                              onMouseEnter={() =>
+                                setHoveredTableSize({ rows, cols })
+                              }
+                              onClick={() => handleInsertTable(rows, cols)}
+                            />
+                          );
+                        },
+                      ),
+                    )}
+                  </div>
 
-          {!control("imageUpload").hidden && (
-          <ImageUploadButton
-            editor={editor}
-            text=""
-            disabled={control("imageUpload").disabled}
-            hideWhenUnavailable={true}
-            onInserted={() => console.log("Image inserted!")}
-            className="size-7 px-0 sm:size-8"
-          />
-          )}
+                  <div className="tr-table-picker-meta">
+                    <label
+                      htmlFor="table-header-row"
+                      className="tr-table-picker-checkbox"
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      <Input
+                        id="table-header-row"
+                        type="checkbox"
+                        checked={tableWithHeaderRow}
+                        onChange={(event) =>
+                          setTableWithHeaderRow(event.target.checked)
+                        }
+                        className="size-4"
+                      />
+                      Include Header
+                    </label>
 
-          {!control("youtube").hidden && (
-          <MenuBottons
-            onClick={openYoutubeDialog}
-            state={editorState.isYoutube}
-            Icon={Video}
-            title="Embed YouTube video"
-            disabled={control("youtube").disabled}
-          />
-          )}
-        </div>
+                    <span className="tr-table-picker-size">
+                      {selectedTableRows} x {selectedTableCols}
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="tr-table-picker-delete"
+                    disabled={!editorState.isTable}
+                    onClick={() => {
+                      editor.chain().focus().deleteTable().run();
+                      setIsInsertTableDialogOpen(false);
+                    }}
+                  >
+                    Delete Table
+                  </button>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+
+            {!control("image").hidden && (
+              <MenuBottons
+                onClick={handleImageClick}
+                state={editorState.isImage}
+                Icon={ImagePlus}
+                title="Insert remote image"
+                disabled={control("image").disabled}
+              />
+            )}
+
+            {!control("imageUpload").hidden && (
+              <ImageUploadButton
+                editor={editor}
+                text=""
+                disabled={control("imageUpload").disabled}
+                hideWhenUnavailable={true}
+                onInserted={() => console.log("Image inserted!")}
+                className="size-7 px-0 sm:size-8"
+              />
+            )}
+
+            {!control("youtube").hidden && (
+              <MenuBottons
+                onClick={openYoutubeDialog}
+                state={editorState.isYoutube}
+                Icon={Video}
+                title="Embed YouTube video"
+                disabled={control("youtube").disabled}
+              />
+            )}
+          </div>
         )}
 
         {hasOnSave && (
@@ -1765,7 +1803,6 @@ export default function Menubar({
           </form>
         </DialogContent>
       </Dialog>
-
     </>
   );
 }
