@@ -4,15 +4,47 @@ import { StyleManager } from "../utils/style-manager";
 export class ResizeController {
   private elements: ImageElements;
   private dispatchNodeView: () => void;
+  private inline: boolean;
   private state: ResizeState = {
     isResizing: false,
     startX: 0,
     startWidth: 0,
   };
 
-  constructor(elements: ImageElements, dispatchNodeView: () => void) {
+  constructor(
+    elements: ImageElements,
+    dispatchNodeView: () => void,
+    inline = false,
+  ) {
     this.elements = elements;
     this.dispatchNodeView = dispatchNodeView;
+    this.inline = inline;
+  }
+
+  private applyWidth(newWidth: number): void {
+    if (this.inline) {
+      const maxWidth =
+        this.elements.wrapper.closest(".ProseMirror")?.clientWidth ||
+        this.elements.wrapper.parentElement?.clientWidth ||
+        this.elements.wrapper.offsetWidth;
+      const clampedWidth = Math.min(Math.max(newWidth, 50), maxWidth);
+
+      this.elements.container.style.width = `${clampedWidth}px`;
+      this.elements.img.style.width = "100%";
+      return;
+    }
+
+    const availableWidth =
+      this.elements.wrapper.closest(".ProseMirror")?.clientWidth ||
+      this.elements.wrapper.parentElement?.clientWidth ||
+      this.elements.wrapper.offsetWidth;
+    let percentageWidth = (newWidth / availableWidth) * 100;
+    percentageWidth = percentageWidth > 100 ? 100 : percentageWidth;
+    percentageWidth = percentageWidth < 10 ? 10 : percentageWidth;
+
+    this.elements.wrapper.style.width = percentageWidth + "%";
+    this.elements.container.style.width = "100%";
+    this.elements.img.style.width = "100%";
   }
 
   private handleMouseMove = (e: MouseEvent, index: number): void => {
@@ -23,13 +55,8 @@ export class ResizeController {
         ? -(e.clientX - this.state.startX)
         : e.clientX - this.state.startX;
     const newWidth = this.state.startWidth + deltaX;
-    const containerWidth = this.elements.wrapper.offsetWidth;
-    let percentageWidth = (newWidth / containerWidth) * 100;
-    percentageWidth = percentageWidth > 100 ? 100 : percentageWidth;
-    percentageWidth = percentageWidth < 10 ? 10 : percentageWidth;
 
-    this.elements.container.style.width = percentageWidth + "%";
-    this.elements.img.style.width = "100%";
+    this.applyWidth(newWidth);
   };
 
   private handleMouseUp = (): void => {
@@ -48,13 +75,7 @@ export class ResizeController {
         : e.touches[0].clientX - this.state.startX;
     const newWidth = this.state.startWidth + deltaX;
 
-    const containerWidth = this.elements.wrapper.offsetWidth;
-    let percentageWidth = (newWidth / containerWidth) * 100;
-    percentageWidth = percentageWidth > 100 ? 100 : percentageWidth;
-    percentageWidth = percentageWidth < 10 ? 10 : percentageWidth;
-
-    this.elements.container.style.width = percentageWidth + "%";
-    this.elements.img.style.width = "100%";
+    this.applyWidth(newWidth);
   };
 
   private handleTouchEnd = (): void => {

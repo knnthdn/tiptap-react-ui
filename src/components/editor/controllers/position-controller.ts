@@ -2,22 +2,27 @@ import { CONSTANTS } from "../constants/index";
 import type { ImageElements } from "../types/index";
 import { StyleManager } from "../utils/style-manager";
 
+type ImageAlignment = "left" | "center" | "right";
+
 export class PositionController {
   private elements: ImageElements;
   private inline: boolean;
   private dispatchNodeView: () => void;
-  private onAlignmentChange: (alignment: "left" | "center" | "right") => void;
+  private onAlignmentChange: (alignment: ImageAlignment) => void;
+  private onInlineChange: (inline: boolean) => void;
 
   constructor(
     elements: ImageElements,
     inline: boolean,
     dispatchNodeView: () => void,
-    onAlignmentChange: (alignment: "left" | "center" | "right") => void,
+    onAlignmentChange: (alignment: ImageAlignment) => void,
+    onInlineChange: (inline: boolean) => void = () => {},
   ) {
     this.elements = elements;
     this.inline = inline;
     this.dispatchNodeView = dispatchNodeView;
     this.onAlignmentChange = onAlignmentChange;
+    this.onInlineChange = onInlineChange;
   }
 
   private getIconSvg(iconName: string): string {
@@ -25,6 +30,7 @@ export class PositionController {
       AlignLeft: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="21" x2="3" y1="6" y2="6"></line><line x1="15" x2="3" y1="12" y2="12"></line><line x1="17" x2="3" y1="18" y2="18"></line></svg>`,
       AlignCenter: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="21" x2="3" y1="6" y2="6"></line><line x1="17" x2="7" y1="12" y2="12"></line><line x1="19" x2="5" y1="18" y2="18"></line></svg>`,
       AlignRight: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="21" x2="3" y1="6" y2="6"></line><line x1="21" x2="9" y1="12" y2="12"></line><line x1="21" x2="7" y1="18" y2="18"></line></svg>`,
+      InlineImage: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="8" height="8" rx="1.5"></rect><path d="M3 6h3"></path><path d="M18 6h3"></path><path d="M3 12h3"></path><path d="M18 12h3"></path><path d="M3 18h3"></path><path d="M18 18h3"></path></svg>`,
     };
     return iconMap[iconName] || "";
   }
@@ -38,7 +44,6 @@ export class PositionController {
       `width: ${CONSTANTS.ICON_SIZE}; height: ${CONSTANTS.ICON_SIZE}; cursor: pointer; opacity: 0.7; transition: opacity 0.2s; display: flex; align-items: center; justify-content: center; position: relative; color: ${CONSTANTS.COLORS.BORDER};`,
     );
 
-    // Style the SVG inside
     const svg = container.querySelector("svg");
     if (svg) {
       svg.setAttribute("width", CONSTANTS.ICON_SIZE);
@@ -57,33 +62,22 @@ export class PositionController {
   }
 
   private handleLeftClick(): void {
-    if (!this.inline) {
-      this.elements.wrapper.style.justifyContent = "flex-start";
-    } else {
-      const style = "display: inline-block; float: left; padding-right: 8px;";
-      this.elements.wrapper.setAttribute("style", style);
-      this.elements.container.setAttribute("style", style);
-    }
     this.onAlignmentChange("left");
     this.dispatchNodeView();
   }
 
   private handleCenterClick(): void {
-    this.elements.wrapper.style.justifyContent = "center";
     this.onAlignmentChange("center");
     this.dispatchNodeView();
   }
 
   private handleRightClick(): void {
-    if (!this.inline) {
-      this.elements.wrapper.style.justifyContent = "flex-end";
-    } else {
-      const style = "display: inline-block; float: right; padding-left: 8px;";
-      this.elements.wrapper.setAttribute("style", style);
-      this.elements.container.setAttribute("style", style);
-    }
     this.onAlignmentChange("right");
     this.dispatchNodeView();
+  }
+
+  private handleInlineToggle(): void {
+    this.onInlineChange(!this.inline);
   }
 
   createPositionControls(): PositionController {
@@ -93,6 +87,13 @@ export class PositionController {
       "style",
       StyleManager.getPositionControllerStyle(this.inline),
     );
+
+    const inlineController = this.createControllerIcon(
+      "InlineImage",
+      this.inline ? "Use block image" : "Use inline image",
+    );
+    inlineController.addEventListener("click", () => this.handleInlineToggle());
+    controller.appendChild(inlineController);
 
     const leftController = this.createControllerIcon(
       CONSTANTS.ICONS.LEFT,

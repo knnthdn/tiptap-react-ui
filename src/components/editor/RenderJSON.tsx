@@ -24,17 +24,15 @@ import { scrollTableOfContentsItemIntoView } from "./utils/scroll-toc-item";
  * ```tsx
  * <RenderJSON
  *   content={post.content}
- *   contentClassName="prose max-w-none"
- *   editorsClassName="p-0"
+ *   className="prose max-w-none"
  *   mode="dark"
  * />
  * ```
  */
-export default function RenderJSONPreview({
+export default function RenderJSON({
   content,
   immediatelyRender = false,
-  contentClassName,
-  editorsClassName,
+  className,
   mode = "system",
   enableTableOfContents = false,
   tableOfContentsPosition = "right",
@@ -44,7 +42,7 @@ export default function RenderJSONPreview({
   const [tableOfContentsItems, setTableOfContentsItems] =
     useState<TableOfContentData>([]);
   const { editor } = useTiptapEditor({
-    className: cn("max-h-none overflow-y-visible", editorsClassName),
+    className: "max-h-none overflow-y-visible bg-transparent",
     content,
     editable: false,
     injectCSS: true,
@@ -91,7 +89,7 @@ export default function RenderJSONPreview({
       className={cn(
         "tr-editor bg-transparent",
         mode === "dark" && "dark",
-        contentClassName,
+        className,
       )}
     >
       {enableTableOfContents ? (

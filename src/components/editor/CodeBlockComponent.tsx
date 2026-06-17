@@ -22,7 +22,7 @@ function CodeBlockComponent({ node }: NodeViewProps) {
 
   return (
     // <NodeViewWrapper className="rounded-[5px] bg-[#2e2b29] px-2 pt-2 pb-4 text-white  my-4 flex flex-col ">
-    <NodeViewWrapper className="rounded-[5px] bg-[#2e2b29] text-white relative my-[24px]">
+    <NodeViewWrapper data-tiptap-code-block="" className="rounded-[5px] bg-[#2e2b29] text-white relative my-[24px] overflow-hidden">
       <button
         tabIndex={-0}
         type="button"

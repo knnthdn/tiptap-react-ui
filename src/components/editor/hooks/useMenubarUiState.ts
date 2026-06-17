@@ -7,6 +7,7 @@ type MenubarUiState = {
   imageUrl: string;
   imageAlt: string;
   imageTitle: string;
+  imageInline: boolean;
   isInsertTableDialogOpen: boolean;
   tableRows: number;
   tableCols: number;
@@ -47,6 +48,7 @@ function getInitialMenubarUiState(highlightColor: string): MenubarUiState {
     imageUrl: "https://",
     imageAlt: "",
     imageTitle: "",
+    imageInline: false,
     isInsertTableDialogOpen: false,
     tableRows: 3,
     tableCols: 3,
@@ -137,6 +139,10 @@ export function useMenubarUiState(highlightColor: string) {
       ),
       setImageTitle: useCallback(
         (title: string) => patchUiState({ imageTitle: title }),
+        [patchUiState],
+      ),
+      setImageInline: useCallback(
+        (inline: boolean) => patchUiState({ imageInline: inline }),
         [patchUiState],
       ),
       setIsInsertTableDialogOpen: useCallback(

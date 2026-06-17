@@ -476,7 +476,7 @@ export const ImageUploadNode: React.FC<NodeViewProps> = (props) => {
           return {
             type: extension.options.type,
             attrs: {
-              ...extension.options,
+              ...extension.options.HTMLAttributes,
               src: url,
               alt: filename,
               title: filename,

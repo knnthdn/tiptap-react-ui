@@ -174,6 +174,7 @@ export default function Menubar({
     imageUrl,
     imageAlt,
     imageTitle,
+    imageInline,
     isInsertTableDialogOpen,
     tableRows,
     tableCols,
@@ -202,6 +203,7 @@ export default function Menubar({
     setImageUrl,
     setImageAlt,
     setImageTitle,
+    setImageInline,
     setIsInsertTableDialogOpen,
     setTableRows,
     setTableCols,
@@ -273,7 +275,7 @@ export default function Menubar({
         isAlignCenter: editor.isActive({ textAlign: "center" }),
         isAlignJustify: editor.isActive({ textAlign: "justify" }),
 
-        isImage: editor.isActive("image") || editor.isActive("imagePlus"),
+        isImage: editor.isActive("image") || editor.isActive("inlineImage") || editor.isActive("imagePlus"),
         isYoutube: editor.isActive("youtube"),
       };
     },
@@ -353,18 +355,22 @@ export default function Menubar({
   };
 
   const handleImageClick = () => {
-    const imageAttributes = editor.getAttributes("image") as {
+    const isInlineImage = editor.isActive("inlineImage");
+    const imageAttributes = editor.getAttributes(
+      isInlineImage ? "inlineImage" : "image",
+    ) as {
       src?: string;
       alt?: string;
       title?: string;
+      inline?: boolean;
     };
 
     setImageUrl(imageAttributes.src ?? "https://");
     setImageAlt(imageAttributes.alt ?? "");
     setImageTitle(imageAttributes.title ?? "");
+    setImageInline(isInlineImage || Boolean(imageAttributes.inline));
     setIsImageDialogOpen(true);
   };
-
   const handleSubmitImage = () => {
     const trimmedUrl = imageUrl.trim();
 
@@ -374,16 +380,24 @@ export default function Menubar({
 
     const trimmedAlt = imageAlt.trim();
     const trimmedTitle = imageTitle.trim();
+    const attrs = {
+      src: trimmedUrl,
+      alt: trimmedAlt || undefined,
+      title: trimmedTitle || undefined,
+      alignment: imageInline ? "left" : "center",
+    };
 
-    editor
-      .chain()
-      .focus()
-      .setImage({
-        src: trimmedUrl,
-        alt: trimmedAlt || undefined,
-        title: trimmedTitle || undefined,
-      })
-      .run();
+    if (editor.isActive("image")) {
+      editor.chain().focus().updateAttributes("image", { ...attrs, inline: imageInline }).run();
+    } else {
+      editor.chain().focus().setImage({ ...attrs, inline: imageInline } as {
+        src: string;
+        alt?: string;
+        title?: string;
+        alignment: string;
+        inline?: boolean;
+      }).run();
+    }
 
     setIsImageDialogOpen(false);
   };
@@ -752,7 +766,7 @@ export default function Menubar({
 
   return (
     <>
-      <div className="flex w-full flex-wrap gap-1.5 rounded-t-sm border border-b-0 bg-muted p-1.5 sm:gap-2.5 sm:p-2">
+      <div className="flex w-full flex-wrap gap-1.5 border-b bg-muted p-1.5 sm:gap-2.5 sm:p-2">
         {/* ── GROUP 1: HISTORY ── */}
         {!historyGroup.hidden && (
           <div className={groupClassName(["undo", "redo"])}>
@@ -1745,7 +1759,7 @@ export default function Menubar({
           <DialogHeader>
             <DialogTitle>Insert image</DialogTitle>
             <DialogDescription>
-              Add image URL, optional alt text, and optional title.
+              Add image URL, optional alt text, optional title, and display mode.
             </DialogDescription>
           </DialogHeader>
           <form
@@ -1787,6 +1801,15 @@ export default function Menubar({
                 placeholder="Image title tooltip"
               />
             </div>
+            <label className="flex cursor-pointer items-center gap-2 rounded-md border border-border/70 px-3 py-2 text-sm text-foreground">
+              <input
+                type="checkbox"
+                checked={imageInline}
+                onChange={(event) => setImageInline(event.target.checked)}
+                className="size-4 accent-current"
+              />
+              <span>Inline image</span>
+            </label>
             <DialogFooter>
               <Button
                 type="button"

@@ -26,7 +26,17 @@ const YoutubeResponsive = Youtube.extend({
   addAttributes() {
     return {
       ...this.parent?.(),
-      alignment: {
+      width: {
+          default: null,
+          parseHTML: (element) => element.getAttribute("width") || element.style.width || null,
+          renderHTML: () => ({}),
+        },
+        height: {
+          default: null,
+          parseHTML: (element) => element.getAttribute("height") || element.style.height || null,
+          renderHTML: () => ({}),
+        },
+        alignment: {
         default: "center",
         parseHTML: (element) => {
           const div = element.closest?.("[data-youtube-video]");
@@ -113,6 +123,84 @@ import { cn, handleImageUploadFallback } from "../lib/utils";
 import { ImageUploadNode } from "../components/image-upload-node";
 
 const lowlight = createLowlight(all);
+
+const InlineImage = Image.extend({
+  name: "inlineImage",
+  priority: 1000,
+
+  parseHTML() {
+    return [{ tag: "img[data-tiptap-image-inline]" }];
+  },
+
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      width: {
+          default: null,
+          parseHTML: (element) => element.getAttribute("width") || element.style.width || null,
+          renderHTML: () => ({}),
+        },
+        height: {
+          default: null,
+          parseHTML: (element) => element.getAttribute("height") || element.style.height || null,
+          renderHTML: () => ({}),
+        },
+        alignment: {
+        default: "left",
+        parseHTML: (element) => {
+          const value = element.getAttribute("data-align");
+          if (value === "left" || value === "right" || value === "center") {
+            return value;
+          }
+          return "center";
+        },
+        renderHTML: () => ({}),
+      },
+      inline: {
+        default: true,
+        parseHTML: () => true,
+        renderHTML: () => ({}),
+      },
+    };
+  },
+
+  renderHTML({ node }) {
+    const alignment = node.attrs.alignment || "center";
+    const floatStyle =
+      alignment === "left"
+        ? "float: left; margin: 0 0.75rem 0.25rem 0;"
+        : alignment === "right"
+          ? "float: right; margin: 0 0 0.25rem 0.75rem;"
+          : "margin: 0 0.35rem;";
+
+    return [
+      "img",
+      {
+        src: node.attrs.src,
+        alt: node.attrs.alt || "",
+        title: node.attrs.title || undefined,
+        width: node.attrs.width,
+        height: node.attrs.height,
+        "data-tiptap-image-inline": "",
+        "data-align": alignment,
+        style: `max-width: 100%; height: auto; display: inline-block; vertical-align: middle; border-radius: 6px; ${floatStyle}`,
+      },
+    ];
+  },
+
+  addNodeView() {
+    return ReactNodeViewRenderer(ImageComponent);
+  },
+}).configure({
+  inline: true,
+  resize: {
+    enabled: true,
+    directions: ["top", "bottom", "left", "right"],
+    minWidth: 50,
+    minHeight: 50,
+    alwaysPreserveAspectRatio: true,
+  },
+});
 
 export const extensions = [
   //* STARTERKIT
@@ -223,6 +311,16 @@ export const extensions = [
     addAttributes() {
       return {
         ...this.parent?.(),
+        width: {
+          default: null,
+          parseHTML: (element) => element.getAttribute("width") || element.style.width || null,
+          renderHTML: () => ({}),
+        },
+        height: {
+          default: null,
+          parseHTML: (element) => element.getAttribute("height") || element.style.height || null,
+          renderHTML: () => ({}),
+        },
         alignment: {
           default: "center",
           parseHTML: (element) => {
@@ -237,33 +335,75 @@ export const extensions = [
             return {};
           },
         },
+        inline: {
+          default: false,
+          parseHTML: (element) => {
+            return element.hasAttribute("data-tiptap-image-inline");
+          },
+          renderHTML: () => {
+            return {};
+          },
+        },
       };
     },
 
     renderHTML({ node }) {
       const alignment = node.attrs.alignment || "center";
-      const justifyContent =
-        alignment === "left"
-          ? "flex-start"
-          : alignment === "right"
-            ? "flex-end"
-            : "center";
+      const inline = node.attrs.inline === true || node.attrs.inline === "true";
+
+      const imageAttrs: Record<string, unknown> = {
+        src: node.attrs.src,
+        alt: node.attrs.alt || "",
+        title: node.attrs.title || undefined,
+        width: node.attrs.width,
+        height: node.attrs.height,
+      };
+
+      if (inline) {
+        const floatStyle =
+          alignment === "right"
+            ? "float: right; margin: 0 0 0.25rem 1rem;"
+            : "float: left; margin: 0 1rem 0.25rem 0;";
+
+        return [
+          "div",
+          {
+            "data-tiptap-image-wrapper": "",
+            "data-tiptap-image-inline": "",
+            "data-align": alignment,
+            style: `${floatStyle} width: ${imageAttrs.width || "auto"}; max-width: 100%;`,
+          },
+          [
+            "img",
+            {
+              ...imageAttrs,
+              "data-tiptap-image-inline": "",
+              style:
+                "max-width: 100%; height: auto; display: block; border-radius: 6px",
+            },
+          ],
+        ];
+      }
+
+      const blockMargin =
+        alignment === "right"
+          ? "margin-left: auto; margin-right: 0;"
+          : alignment === "center"
+            ? "margin-left: auto; margin-right: auto;"
+            : "margin-left: 0; margin-right: auto;";
 
       return [
         "div",
         {
           "data-tiptap-image-wrapper": "",
-          style: `display: flex; justify-content: ${justifyContent}; width: 100%;`,
+          "data-align": alignment,
+          style: `display: block; width: ${imageAttrs.width || "fit-content"}; max-width: 100%; ${blockMargin}`,
         },
         [
           "img",
           {
-            src: node.attrs.src,
-            alt: node.attrs.alt || "",
-            width: node.attrs.width,
-            height: node.attrs.height,
-            style:
-              "max-width: 100%; height: auto; display: block; border-radius: 6px",
+            ...imageAttrs,
+            style: `${imageAttrs.width ? "width: 100%; " : ""}max-width: 100%; height: auto; display: block; border-radius: 6px`,
           },
         ],
       ];
@@ -281,6 +421,9 @@ export const extensions = [
       alwaysPreserveAspectRatio: true,
     },
   }),
+
+  //* INLINE IMAGE
+  InlineImage,
 
   //* YOUTUBE
   YoutubeResponsive.configure({

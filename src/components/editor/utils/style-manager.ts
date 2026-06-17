@@ -39,7 +39,7 @@ export class StyleManager {
   }
 
   static getPositionControllerStyle(inline: boolean): string {
-    const width = inline ? "66px" : "100px";
+    const width = inline ? "100px" : "132px";
     return `
       position: absolute; 
       top: 15px; 

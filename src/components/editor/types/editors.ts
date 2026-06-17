@@ -364,16 +364,32 @@ export type RichTextEditorProps = {
   theme?: RichTextEditorTheme;
 
   /**
-   * Custom class names applied to the editor's container wrapper.
+   * Custom class names applied to the outer RichTextEditor wrapper.
    *
-   * Useful for:
-   * - Custom styling
-   * - Layout adjustments
-   * - Tailwind utility classes
-   * - Margins outside editor
-   * - Positioning
+   * This wraps the tabs, preview panel, mode toggle, and editor shell. Use it
+   * for page/layout concerns such as width, centering, margins, and outer
+   * spacing.
+   *
+   * @example
+   * ```tsx
+   * <RichTextEditor wrapperClassName="max-w-5xl mx-auto py-5" />
+   * ```
    */
-  className?: string;
+  wrapperClassName?: string;
+
+  /**
+   * Custom class names applied to the editor shell.
+   *
+   * This shell contains the menubar, editable content, drag handle, and optional
+   * word-count footer. Use it for editor-specific visuals such as borders,
+   * rounding, background, shadow, or editor height.
+   *
+   * @example
+   * ```tsx
+   * <RichTextEditor editorClassName="border-0 rounded-none bg-zinc-950" />
+   * ```
+   */
+  editorClassName?: string;
 };
 
 //* NotionEditor Component
@@ -464,14 +480,18 @@ export type RenderJSONProps = {
   immediatelyRender?: boolean;
 
   /**
-   * Custom class names applied to the rendered output container.
+   * Custom class names applied to the rendered output wrapper.
    *
-   * Useful for styling:
-   * - typography (e.g. Tailwind `prose`)
-   * - layout adjustments
-   * - theming (dark/light mode)
+   * Use this for typography, layout, background, spacing, and theme-related
+   * styles. The internal read-only editor is transparent and adopts this
+   * wrapper's visual context.
+   *
+   * @example
+   * ```tsx
+   * <RenderJSON content={content} className="prose max-w-3xl mx-auto" />
+   * ```
    */
-  contentClassName?: string;
+  className?: string;
 
   /**
    * Theme mode applied to the rendered output.
@@ -484,30 +504,11 @@ export type RenderJSONProps = {
   mode?: RichTextEditorMode;
 
   /**
-   * Custom class names applied to the editable Tiptap editor element.
-   *
-   * Useful for styling:
-   * - editor height/scroll behavior
-   * - padding and spacing
-   * - typography
-   * - borders and focus states
-   *
-   * Can extend or override the default editor styles.
-   */
-  editorsClassName?: string;
-
-  /**
-   * Optional fixed editor height in pixels.
-   *
-   * @internal
-   */
-  _height?: number;
-
-  /**
    * Shows a generated table of contents beside rendered JSON content.
    *
    * `RenderHTML` output is intentionally not supported because raw serialized
    * HTML does not include the live Tiptap TOC state.
+   *
    *
    * @default false
    */

@@ -937,6 +937,10 @@
     --drag-handle-size: 1.75rem;
     --drag-handle-gap: clamp(0.25rem, 1vw, 0.5rem);
     --drag-handle-space: calc(var(--drag-handle-size) + var(--drag-handle-gap));
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-background);
   }
 
   .tr-rich-editor-content {
@@ -1067,7 +1071,7 @@
     min-height: 12.5rem;
     max-height: 60vh;
     overflow-y: auto;
-    border: 1px solid var(--color-border);
+    border: 0;
     padding: 2rem 1.5rem;
     outline: 0;
   }
@@ -1083,15 +1087,9 @@
     max-height: 100%;
   }
 
-  .tr-rich-editor-content-no-footer > .tiptap {
-    border-bottom-right-radius: var(--radius-sm);
-    border-bottom-left-radius: var(--radius-sm);
-  }
 
   .tr-rich-editor-content-no-footer {
     overflow: hidden;
-    border-bottom-right-radius: var(--radius-sm);
-    border-bottom-left-radius: var(--radius-sm);
   }
 
   .tiptap {
@@ -1196,9 +1194,34 @@
     margin-right: auto !important;
   }
 
-  .tiptap [data-tiptap-image-wrapper] {
-    margin-top: 32px;
+  .tiptap [data-tiptap-image-wrapper]:not([data-tiptap-image-inline]) {
+    margin-top: 0;
     margin-bottom: 32px;
+  }
+
+  .tiptap [data-tiptap-image-inline] {
+    margin-top: 0;
+  }
+
+  .tiptap [data-tiptap-image-inline] + :is(p, h1, h2, h3, h4, h5, h6),
+  .tiptap > [data-tiptap-image-inline] ~ :is(p, h1, h2, h3, h4, h5, h6),
+  .tiptap:has([data-tiptap-image-inline]) > :is(p, h1, h2, h3, h4, h5, h6):first-of-type {
+    margin-top: 0;
+  }
+
+  .tiptap [data-tiptap-image-inline] + :is(ul, ol),
+  .tiptap > [data-tiptap-image-inline] ~ :is(ul, ol),
+  .tiptap:has([data-tiptap-image-inline]) > :is(ul, ol):first-of-type {
+    margin-top: 0;
+    padding-left: 1.5rem;
+    overflow: hidden;
+  }
+
+  .tiptap [data-tiptap-image-inline] + :is(pre, blockquote, [data-tiptap-code-block]),
+  .tiptap > [data-tiptap-image-inline] ~ :is(pre, blockquote, [data-tiptap-code-block]),
+  .tiptap:has([data-tiptap-image-inline]) > :is(pre, blockquote, [data-tiptap-code-block]):first-of-type {
+    margin-top: 0;
+    overflow: hidden;
   }
 
   .tiptap > [data-tiptap-image-wrapper]:first-child {

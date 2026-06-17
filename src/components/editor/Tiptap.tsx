@@ -43,7 +43,8 @@ export default function RichtextEditor({
   mode = "light",
   theme = "default",
   extensionState,
-  className,
+  wrapperClassName,
+  editorClassName,
 }: RichTextEditorProps) {
   const [highlightColor, setHighlightColor] = useState("#ffcc00");
   const [activePreview, setActivePrev] = useState<"json" | "html">("json");
@@ -90,7 +91,8 @@ export default function RichtextEditor({
       <RichTextEditorContent
         activePreview={activePreview}
         charactersCount={charactersCount}
-        className={className}
+        wrapperClassName={wrapperClassName}
+        editorClassName={editorClassName}
         editor={editor}
         enableModeToggle={enableModeToggle}
         enablePreview={enablePreview}
@@ -114,7 +116,8 @@ export default function RichtextEditor({
 type RichTextEditorContentProps = {
   activePreview: "json" | "html";
   charactersCount: number;
-  className?: string;
+  wrapperClassName?: string;
+  editorClassName?: string;
   editor: NonNullable<RichTextEditorProps["editor"]>;
   enableModeToggle: boolean;
   enablePreview: boolean;
@@ -137,7 +140,8 @@ type RichTextEditorContentProps = {
 function RichTextEditorContent({
   activePreview,
   charactersCount,
-  className,
+  wrapperClassName,
+  editorClassName,
   editor,
   enableModeToggle,
   enablePreview,
@@ -157,7 +161,10 @@ function RichTextEditorContent({
   const { resolvedTheme } = useTheme();
   const now = new Date();
   const hasFullHeightLayout =
-    !!className && /\bh-(full|screen|dvh|svh|lvh)\b/.test(className);
+    [wrapperClassName, editorClassName].some(
+      (className) =>
+        !!className && /\bh-(full|screen|dvh|svh|lvh)\b/.test(className),
+    );
 
   return (
     <div className={cn(hasFullHeightLayout && "h-full")}>
@@ -167,7 +174,7 @@ function RichTextEditorContent({
           "w-full tr-editor bg-transparent",
           resolvedTheme === "dark" && "dark",
           hasFullHeightLayout && "flex h-full min-h-0 flex-col",
-          className,
+          wrapperClassName,
         )}
         data-theme={theme}
       >
@@ -193,6 +200,7 @@ function RichTextEditorContent({
           </div>
         )}
 
+        {/* EDITOR WRAPPER  */}
         <TabsContent
           value="edit"
           className={cn("w-full", hasFullHeightLayout && "min-h-0 flex-1")}
@@ -201,6 +209,7 @@ function RichTextEditorContent({
             className={cn(
               "tr-editor-shell relative flex flex-col",
               hasFullHeightLayout && "h-full min-h-0",
+              editorClassName,
             )}
             onKeyDownCapture={(event) => {
               if (shouldBlockExtensionShortcut(event, extensionState)) {
@@ -240,7 +249,7 @@ function RichTextEditorContent({
 
               {/* WORD COUNT  */}
               {enableWordCount && (
-                <div className="bg-muted py-1.5 px-3 rounded-b-sm border border-t-0 flex shrink-0 gap-2.5 flex-wrap justify-between items-center">
+                <div className="bg-muted py-1.5 px-3 border-t flex shrink-0 gap-2.5 flex-wrap justify-between items-center">
                   <div className="flex gap-2.5 items-center">
                     <span className="block p-1 rounded bg-background/70 text-muted-foreground">
                       <CaseSensitiveIcon className="size-4" />
