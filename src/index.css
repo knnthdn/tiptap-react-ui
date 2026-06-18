@@ -1314,7 +1314,8 @@
   }
 
   /* TABLES */
-  .tiptap .tableWrapper {
+  .tiptap .tableWrapper,
+  .tiptap > table {
     --tr-table-border: color-mix(
       in oklab,
       var(--color-border) 88%,
@@ -1357,7 +1358,10 @@
     background: transparent;
   }
 
-  .tr-editor.dark .tiptap .tableWrapper {
+  .tr-editor.dark.tiptap .tableWrapper,
+  .tr-editor.dark.tiptap > table,
+  .tr-editor.dark .tiptap .tableWrapper,
+  .tr-editor.dark .tiptap > table {
     --tr-table-border: color-mix(
       in oklab,
       var(--color-border) 82%,
@@ -1396,7 +1400,8 @@
     background: transparent;
   }
 
-  .tiptap .tableWrapper table {
+  .tiptap .tableWrapper table,
+  .tiptap > table {
     width: 100%;
     min-width: 36rem;
     border-collapse: separate;
@@ -1404,7 +1409,8 @@
     table-layout: fixed;
   }
 
-  .tiptap .tableWrapper table :is(td, th) {
+  .tiptap .tableWrapper table :is(td, th),
+  .tiptap > table :is(td, th) {
     position: relative;
     min-width: 7rem;
     padding: 0.8rem 2.25rem 0.8rem 0.9rem;
@@ -1416,12 +1422,14 @@
   }
 
   /* Keep action menu positioning correct if the class is on a wrapper element. */
-  .tiptap .tableWrapper table :is(td, th).notion-table-cell {
+  .tiptap .tableWrapper table :is(td, th).notion-table-cell,
+  .tiptap > table :is(td, th).notion-table-cell {
     position: relative;
   }
 
   /* Header row/column styling (applies when cells become <th>) */
-  .tiptap .tableWrapper table th {
+  .tiptap .tableWrapper table th,
+  .tiptap > table th {
     font-weight: 600 !important;
     border-color: var(--tr-table-header-border) !important;
     background: var(--tr-table-header-bg) !important;
@@ -1430,7 +1438,8 @@
   }
 
   /* Ensure entire header row has consistent background */
-  .tiptap .tableWrapper table thead tr {
+  .tiptap .tableWrapper table thead tr,
+  .tiptap > table thead tr {
     background: transparent;
   }
 
@@ -1458,32 +1467,39 @@
   }
 
   .tiptap .tableWrapper table :is(td, th) > :first-child,
+  .tiptap > table :is(td, th) > :first-child,
   .tiptap .tableWrapper table .notion-table-cell-content > :first-child {
     margin-top: 0;
   }
 
   .tiptap .tableWrapper table :is(td, th) > :last-child,
+  .tiptap > table :is(td, th) > :last-child,
   .tiptap .tableWrapper table .notion-table-cell-content > :last-child {
     margin-bottom: 0;
   }
 
-  .tiptap .tableWrapper table :is(td, th) p {
+  .tiptap .tableWrapper table :is(td, th) p,
+  .tiptap > table :is(td, th) p {
     min-height: 1.65em;
   }
 
-  .tiptap .tableWrapper .selectedCell::after {
+  .tiptap .tableWrapper .selectedCell::after,
+  .tiptap > table .selectedCell::after {
     background: var(--tr-table-selected-bg) !important;
   }
 
-  .tiptap .tableWrapper table :is(td, th).selectedCell {
+  .tiptap .tableWrapper table :is(td, th).selectedCell,
+  .tiptap > table :is(td, th).selectedCell {
     border-color: var(--tr-table-selected-border) !important;
   }
 
-  .tiptap .tableWrapper table tr > :last-child {
+  .tiptap .tableWrapper table tr > :last-child,
+  .tiptap > table tr > :last-child {
     border-right: 0;
   }
 
-  .tiptap .tableWrapper table tbody tr:last-child > * {
+  .tiptap .tableWrapper table tbody tr:last-child > *,
+  .tiptap > table tbody tr:last-child > * {
     border-bottom: 0;
   }
 
@@ -2278,6 +2294,15 @@
     border-radius: 0;
   }
 
+  .tr-notion-editor-shell,
+  .notion-editor-canvas,
+  .notion-editor-content,
+  .notion-editor-content > .tiptap,
+  .tr-notion-tiptap {
+    background: transparent;
+    background-color: transparent;
+    background-image: none;
+  }
   .notion-editor-header {
     display: flex;
     min-height: 3rem;
@@ -2344,6 +2369,7 @@
 
   .notion-editor-content > .tiptap {
     border: 0;
+    background: transparent;
     padding: clamp(1.5rem, 3vw, 2.75rem) clamp(1rem, 3.5vw, 3rem);
     padding-right: calc(clamp(1rem, 3.5vw, 3rem) + var(--drag-handle-space));
     outline: 0;

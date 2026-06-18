@@ -1,7 +1,7 @@
-// import NotionEditor from "./components/editor/NotionEditor";
+import NotionEditor from "./components/editor/NotionEditor";
 
 // import RenderJSON from "./components/editor/RenderJSON";
-import RichtextEditor from "./components/editor/Tiptap";
+// import RichtextEditor from "./components/editor/Tiptap";
 import useTiptapEditor from "./hooks/useTiptapEditor";
 
 export default function App() {
@@ -10,19 +10,19 @@ export default function App() {
   });
 
   return (
-    <>
-      <RichtextEditor
+    <div className="max-w-5xl mx-auto bg-gray-800 px-5">
+      {/* <RichtextEditor
         editor={editor}
         enablePreview={true}
         wrapperClassName="max-w-5xl mx-auto py-5 h-screen"
         enableModeToggle
         theme="violet"
-      />
+      /> */}
 
-      {/* <NotionEditor
+      <NotionEditor
         editor={editor}
         className="max-w-5xl mx-auto min-h-screen"
-      /> */}
+      />
 
       {/* <RenderJSON
         className="py-5 px-5 max-w-7xl mx-auto"
@@ -472,7 +472,7 @@ export default function App() {
             },
           ],
         }}
-      /> */}
-    </>
+      />  */}
+    </div>
   );
 }

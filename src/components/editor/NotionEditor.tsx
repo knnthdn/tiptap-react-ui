@@ -969,7 +969,10 @@ function NotionEditorInner({
         onKeyDownCapture={handleKeyDown}
       >
         <div
-          className={cn(hasFullHeightLayout && "flex min-h-0 flex-1 flex-col")}
+          className={cn(
+            "notion-editor-canvas",
+            hasFullHeightLayout && "flex min-h-0 flex-1 flex-col",
+          )}
         >
           <NotionBubbleMenu editor={editor} extensionState={extensionState} />
           <YoutubeBubbleMenu editor={editor} />
