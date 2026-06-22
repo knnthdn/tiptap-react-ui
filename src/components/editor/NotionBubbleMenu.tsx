@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { TextSelection } from "@tiptap/pm/state";
 import { useEditorState, type Editor } from "@tiptap/react";
 import { BubbleMenu as TiptapBubbleMenu } from "@tiptap/react/menus";
@@ -61,6 +61,7 @@ type RecentBubbleColor = {
 export const NOTION_BUBBLE_MENU_PLUGIN_KEY = "notionBubbleMenu";
 const RECENT_COLORS_STORAGE_KEY = "tiptap-react-ui-notion-recent-colors";
 const MAX_RECENT_COLORS = 6;
+const BUBBLE_KEYBOARD_ITEM_SELECTOR = "button:not(:disabled)";
 
 const TEXT_COLORS = [
   "#ffffff",
@@ -95,6 +96,7 @@ export default function NotionBubbleMenu({
   const [linkUrl, setLinkUrl] = useState("https://");
   const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false);
   const [activeMenu, setActiveMenu] = useState<ActiveBubbleMenu>(null);
+  const [isBubbleMenuVisible, setIsBubbleMenuVisible] = useState(false);
   const [customColor, setCustomColor] = useState("#7c3aed");
   const [recentColors, setRecentColors] = useState<RecentBubbleColor[]>(() => {
     if (typeof window === "undefined") return [];
@@ -116,6 +118,130 @@ export default function NotionBubbleMenu({
     }
   });
 
+  const bubbleMenuRef = useRef<HTMLDivElement | null>(null);
+
+  const getKeyboardItems = useCallback(() => {
+    const root = bubbleMenuRef.current;
+    if (!root) return [];
+
+    return Array.from(
+      root.querySelectorAll<HTMLButtonElement>(BUBBLE_KEYBOARD_ITEM_SELECTOR),
+    ).filter((item) => item.offsetParent !== null);
+  }, []);
+
+  const focusKeyboardItem = useCallback(
+    (index: number) => {
+      const items = getKeyboardItems();
+      if (items.length === 0) return;
+
+      const nextIndex = (index + items.length) % items.length;
+      items[nextIndex]?.focus();
+    },
+    [getKeyboardItems],
+  );
+
+  const hideBubbleMenu = useCallback(() => {
+    const selectionEnd = editor.state.selection.to;
+
+    setActiveMenu(null);
+    editor.chain().focus().setTextSelection(selectionEnd).run();
+  }, [editor]);
+
+  const handleBubbleKeyDown = useCallback(
+    (event: KeyboardEvent<HTMLDivElement>) => {
+      const target = event.target as HTMLElement;
+      const isTypingTarget = target.closest("input, textarea, select");
+
+      if (isTypingTarget && event.key !== "Escape") return;
+
+      if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
+        hideBubbleMenu();
+        return;
+      }
+
+      if (event.key === "Backspace" || event.key === "Delete") {
+        event.preventDefault();
+        event.stopPropagation();
+        setActiveMenu(null);
+        editor.chain().focus().deleteSelection().run();
+        return;
+      }
+
+      const keyDirection =
+        event.key === "ArrowRight" || event.key === "ArrowDown"
+          ? 1
+          : event.key === "ArrowLeft" || event.key === "ArrowUp"
+            ? -1
+            : 0;
+
+      if (keyDirection !== 0) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const items = getKeyboardItems();
+        if (items.length === 0) return;
+
+        const currentIndex = items.findIndex(
+          (item) => item === document.activeElement,
+        );
+
+        focusKeyboardItem(currentIndex === -1 ? 0 : currentIndex + keyDirection);
+        return;
+      }
+
+      if (event.key === "Home" || event.key === "End") {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const items = getKeyboardItems();
+        focusKeyboardItem(event.key === "Home" ? 0 : items.length - 1);
+      }
+    },
+    [focusKeyboardItem, getKeyboardItems, hideBubbleMenu],
+  );
+  useEffect(() => {
+    if (!isBubbleMenuVisible) return;
+
+    function handleEditorArrowKey(event: globalThis.KeyboardEvent) {
+      const keyDirection =
+        event.key === "ArrowRight" || event.key === "ArrowDown"
+          ? 1
+          : event.key === "ArrowLeft" || event.key === "ArrowUp"
+            ? -1
+            : 0;
+
+      if (
+        keyDirection === 0 ||
+        event.defaultPrevented ||
+        event.shiftKey ||
+        event.altKey ||
+        event.ctrlKey ||
+        event.metaKey
+      ) {
+        return;
+      }
+
+      const target = event.target as HTMLElement | null;
+      if (!target || !editor.view.dom.contains(target)) return;
+
+      const { selection } = editor.state;
+      if (!(selection instanceof TextSelection) || selection.empty) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      const items = getKeyboardItems();
+      focusKeyboardItem(keyDirection === -1 ? items.length - 1 : 0);
+    }
+
+    window.addEventListener("keydown", handleEditorArrowKey, true);
+
+    return () => {
+      window.removeEventListener("keydown", handleEditorArrowKey, true);
+    };
+  }, [editor, focusKeyboardItem, getKeyboardItems, isBubbleMenuVisible]);
   const editorState = useEditorState({
     editor,
     selector: () => ({
@@ -204,7 +330,9 @@ export default function NotionBubbleMenu({
 
   function handleLinkClick() {
     if (editorState.isLink) {
-      editor.chain().focus().unsetLink().run();
+      runInlineAction(() => {
+        editor.chain().focus().unsetLink().run();
+      });
       return;
     }
 
@@ -218,17 +346,21 @@ export default function NotionBubbleMenu({
     const trimmedUrl = linkUrl.trim();
 
     if (!trimmedUrl) {
-      editor.chain().focus().unsetLink().run();
+      runInlineAction(() => {
+        editor.chain().focus().unsetLink().run();
+      });
       setIsLinkDialogOpen(false);
       return;
     }
 
-    editor
-      .chain()
-      .focus()
-      .extendMarkRange("link")
-      .setLink({ href: trimmedUrl })
-      .run();
+    runInlineAction(() => {
+      editor
+        .chain()
+        .focus()
+        .extendMarkRange("link")
+        .setLink({ href: trimmedUrl })
+        .run();
+    });
     setIsLinkDialogOpen(false);
   }
 
@@ -270,6 +402,13 @@ function applyHighlightColor(color: string) {
     };
   }
 
+  function runInlineAction(command: () => void) {
+    const selectionEnd = editor.state.selection.to;
+
+    command();
+    editor.chain().focus().setTextSelection(selectionEnd).run();
+    setActiveMenu(null);
+  }
   function applyTextAlign(alignment: "left" | "center" | "right" | "justify") {
     const selectionEnd = editor.state.selection.to;
 
@@ -307,10 +446,23 @@ function applyHighlightColor(color: string) {
         options={{
           placement: "bottom-start",
           offset: 10,
-          onHide: () => setActiveMenu(null),
+
+          onShow: () => setIsBubbleMenuVisible(true),
+          onHide: () => {
+            setIsBubbleMenuVisible(false);
+            setActiveMenu(null);
+          },
         }}
         className="tr-notion-selection-bubble"
       >
+        <div
+          ref={bubbleMenuRef}
+          role="toolbar"
+          aria-label="Text formatting"
+          tabIndex={-1}
+          className="tr-notion-selection-bubble-content"
+          onKeyDown={handleBubbleKeyDown}
+        >
         {!turnGroup.hidden && (
         <div className="notion-bubble-popover-wrap">
           <button
@@ -452,7 +604,11 @@ function applyHighlightColor(color: string) {
           label="Bold"
           active={editorState.isBold}
           disabled={control("bold").disabled}
-          onClick={() => editor.chain().focus().toggleBold().run()}
+          onClick={() => {
+            runInlineAction(() => {
+              editor.chain().focus().toggleBold().run();
+            });
+          }}
         >
           <Bold className="size-4" />
         </BubbleIconButton>
@@ -462,7 +618,11 @@ function applyHighlightColor(color: string) {
           label="Italic"
           active={editorState.isItalic}
           disabled={control("italic").disabled}
-          onClick={() => editor.chain().focus().toggleItalic().run()}
+          onClick={() => {
+            runInlineAction(() => {
+              editor.chain().focus().toggleItalic().run();
+            });
+          }}
         >
           <Italic className="size-4" />
         </BubbleIconButton>
@@ -472,7 +632,11 @@ function applyHighlightColor(color: string) {
           label="Underline"
           active={editorState.isUnderlined}
           disabled={control("underline").disabled}
-          onClick={() => editor.chain().focus().toggleUnderline().run()}
+          onClick={() => {
+            runInlineAction(() => {
+              editor.chain().focus().toggleUnderline().run();
+            });
+          }}
         >
           <Underline className="size-4" />
         </BubbleIconButton>
@@ -482,7 +646,11 @@ function applyHighlightColor(color: string) {
           label="Strike"
           active={editorState.isStrike}
           disabled={control("strike").disabled}
-          onClick={() => editor.chain().focus().toggleStrike().run()}
+          onClick={() => {
+            runInlineAction(() => {
+              editor.chain().focus().toggleStrike().run();
+            });
+          }}
         >
           <Strikethrough className="size-4" />
         </BubbleIconButton>
@@ -492,7 +660,11 @@ function applyHighlightColor(color: string) {
           label="Code"
           active={editorState.isCode}
           disabled={control("inlineCode").disabled}
-          onClick={() => editor.chain().focus().toggleCode().run()}
+          onClick={() => {
+            runInlineAction(() => {
+              editor.chain().focus().toggleCode().run();
+            });
+          }}
         >
           <Code2 className="size-4" />
         </BubbleIconButton>
@@ -714,6 +886,7 @@ function applyHighlightColor(color: string) {
           )}
         </div>
         )}
+        </div>
       </TiptapBubbleMenu>
 
       <Dialog open={isLinkDialogOpen} onOpenChange={setIsLinkDialogOpen}>
