@@ -10,6 +10,7 @@ import {
 import { EditorContent } from "@tiptap/react";
 import DragHandle from "./LazyDragHandle";
 import { isValidYoutubeUrl } from "@tiptap/extension-youtube";
+import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import {
@@ -319,12 +320,25 @@ function NotionEditorInner({
   const [youtubeWidth, setYoutubeWidth] = useState(640);
   const [youtubeHeight, setYoutubeHeight] = useState(480);
   const [youtubeFullWidth, setYoutubeFullWidth] = useState(false);
+  const [isListDragTarget, setIsListDragTarget] = useState(false);
   const [isSmallScreen, setIsSmallScreen] = useState(
     () =>
       typeof window !== "undefined" &&
       window.matchMedia("(max-width: 640px)").matches,
   );
 
+  const handleDragNodeChange = useCallback(
+    ({ node }: { node: ProseMirrorNode | null }) => {
+      const nodeName = node?.type.name;
+      setIsListDragTarget(
+        nodeName === "listItem" ||
+          nodeName === "taskItem" ||
+          nodeName === "bulletList" ||
+          nodeName === "orderedList",
+      );
+    },
+    [],
+  );
   const deleteSlashQuery = useCallback(
     (range: SlashMenuState["range"] = slashMenu.range) => {
       if (range.to <= range.from) return;
@@ -1081,12 +1095,14 @@ function NotionEditorInner({
             editor={editor}
             className={cn(
               "notion-block-controls z-5000",
+              isListDragTarget && "notion-block-controls-list",
               isSmallScreen && "notion-block-controls-mobile",
             )}
             computePositionConfig={{
               placement: isSmallScreen ? "right" : "left",
               strategy: "absolute",
             }}
+            onNodeChange={handleDragNodeChange}
             nested={{
               edgeDetection: "right",
               rules: [

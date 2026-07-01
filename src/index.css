@@ -1853,6 +1853,12 @@
     transform: translateX(calc(-1 * var(--drag-handle-gap)));
   }
 
+  .notion-block-controls-list {
+    transform: translateX(
+      calc(-1 * (var(--drag-handle-gap) + 0.75rem))
+    );
+  }
+
   .notion-block-control-group {
     display: inline-flex;
     align-items: center;

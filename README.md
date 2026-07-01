@@ -1,6 +1,8 @@
-﻿# tiptap-react-ui
+# tiptap-react-ui
 
 A prebuilt React rich text editor powered by Tiptap. It includes a full toolbar editor, a Notion-like editor, saved-content renderers, built-in themes, tables, images, YouTube embeds, code blocks, and more.
+
+[Documentation](https://docs-tiptap-react-ui.vercel.app/)
 
 ## Installation
 
