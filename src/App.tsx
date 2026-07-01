@@ -7,7 +7,7 @@ export default function App() {
   });
 
   return (
-    <div className="max-w-5xl mx-auto px-5">
+    <div className="max-w-5xl mx-auto px-5 ">
       <RichtextEditor
         editor={editor}
         enablePreview={true}

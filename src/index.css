@@ -933,6 +933,14 @@
 }
 
 @layer components {
+  .tr-editor .tr-mode-toggle-trigger {
+    border-color: color-mix(in oklab, var(--color-foreground) 18%, transparent);
+  }
+
+  .tr-editor.dark .tr-mode-toggle-trigger {
+    border-color: color-mix(in oklab, var(--color-foreground) 24%, transparent);
+  }
+
   .tr-editor-shell {
     --drag-handle-size: 1.75rem;
     --drag-handle-gap: clamp(0.25rem, 1vw, 0.5rem);
