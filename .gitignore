@@ -24,3 +24,6 @@ dist-ssr
 *.sw?
 
 *.tgz
+
+# Local package testing
+/scripts/pack-and-install.mjs

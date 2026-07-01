@@ -5,7 +5,7 @@ A prebuilt React rich text editor powered by Tiptap. It includes a full toolbar 
 ## Installation
 
 ```bash
-npm install tiptap-react-ui @tiptap/core @tiptap/pm @tiptap/react
+npm install tiptap-react-ui @tiptap/core@3 @tiptap/pm@3 @tiptap/react@3
 ```
 
 Import the bundled stylesheet once in your app:

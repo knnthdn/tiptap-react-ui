@@ -1,6 +1,26 @@
 {
   "name": "tiptap-react-ui",
   "version": "1.0.0",
+  "description": "A customizable React rich text editor powered by Tiptap.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/knnthdn/tiptap-react-ui.git"
+  },
+  "homepage": "https://github.com/knnthdn/tiptap-react-ui#readme",
+  "bugs": {
+    "url": "https://github.com/knnthdn/tiptap-react-ui/issues"
+  },
+  "keywords": [
+    "react",
+    "tiptap",
+    "editor",
+    "rich-text-editor",
+    "wysiwyg",
+    "notion-editor",
+    "wysiwyg rich-text-editor",
+    "pre-built rich-text-editor"
+  ],
   "type": "module",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -22,6 +42,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build && node scripts/scope-public-css.mjs",
+    "prepublishOnly": "npm run build",
     "lint": "eslint .",
     "preview": "vite preview",
     "pack:test": "node scripts/pack-and-install.mjs"
