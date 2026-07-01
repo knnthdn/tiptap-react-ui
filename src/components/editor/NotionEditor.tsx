@@ -8,7 +8,7 @@ import {
   type MouseEvent,
 } from "react";
 import { EditorContent } from "@tiptap/react";
-import DragHandle from "@tiptap/extension-drag-handle-react";
+import DragHandle from "./LazyDragHandle";
 import { isValidYoutubeUrl } from "@tiptap/extension-youtube";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";

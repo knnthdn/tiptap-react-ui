@@ -8,7 +8,7 @@ import {
 import { EditorContent, useEditorState } from "@tiptap/react";
 
 //* NODES
-import DragHandle from "@tiptap/extension-drag-handle-react";
+import DragHandle from "./LazyDragHandle";
 
 //* CUSTOM IMPORTS
 import Menubar from "../editor/Menubar";
