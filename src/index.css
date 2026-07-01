@@ -2027,6 +2027,11 @@
     color: var(--color-popover-foreground);
   }
 
+  .notion-bubble-local-menu-top {
+    top: auto;
+    bottom: calc(100% + 0.5rem);
+  }
+
   .notion-bubble-local-menu-end {
     right: 0;
     left: auto;

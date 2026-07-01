@@ -11,9 +11,8 @@ export default function App() {
       <RichtextEditor
         editor={editor}
         enablePreview={true}
-        wrapperClassName="max-w-5xl mx-auto py-5 h-screen"
+        wrapperClassName="max-w-5xl mx-auto py-5"
         enableModeToggle
-        theme="violet"
       />
 
       {/* <NotionEditor

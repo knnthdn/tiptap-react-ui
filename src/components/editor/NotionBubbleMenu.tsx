@@ -96,6 +96,9 @@ export default function NotionBubbleMenu({
   const [linkUrl, setLinkUrl] = useState("https://");
   const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false);
   const [activeMenu, setActiveMenu] = useState<ActiveBubbleMenu>(null);
+  const [menuPlacement, setMenuPlacement] = useState<"top" | "bottom">(
+    "bottom",
+  );
   const [isBubbleMenuVisible, setIsBubbleMenuVisible] = useState(false);
   const [customColor, setCustomColor] = useState("#7c3aed");
   const [recentColors, setRecentColors] = useState<RecentBubbleColor[]>(() => {
@@ -119,6 +122,41 @@ export default function NotionBubbleMenu({
   });
 
   const bubbleMenuRef = useRef<HTMLDivElement | null>(null);
+
+  const updateLocalMenuLayout = useCallback(() => {
+    const bubbleMenu = bubbleMenuRef.current;
+    if (!bubbleMenu || typeof window === "undefined") return;
+
+    const rect = bubbleMenu.getBoundingClientRect();
+    const viewportGutter = 12;
+    const menuOffset = 8;
+    const availableBelow = Math.max(
+      0,
+      window.innerHeight - rect.bottom - viewportGutter - menuOffset,
+    );
+    const availableAbove = Math.max(
+      0,
+      rect.top - viewportGutter - menuOffset,
+    );
+    const placement =
+      availableBelow >= 280 || availableBelow >= availableAbove
+        ? "bottom"
+        : "top";
+    setMenuPlacement(placement);
+  }, []);
+
+  const toggleLocalMenu = useCallback(
+    (menu: Exclude<ActiveBubbleMenu, null>, disabled: boolean) => {
+      if (disabled || activeMenu === menu) {
+        setActiveMenu(null);
+        return;
+      }
+
+      updateLocalMenuLayout();
+      setActiveMenu(menu);
+    },
+    [activeMenu, updateLocalMenuLayout],
+  );
 
   const getKeyboardItems = useCallback(() => {
     const root = bubbleMenuRef.current;
@@ -199,8 +237,21 @@ export default function NotionBubbleMenu({
         focusKeyboardItem(event.key === "Home" ? 0 : items.length - 1);
       }
     },
-    [focusKeyboardItem, getKeyboardItems, hideBubbleMenu],
+    [editor, focusKeyboardItem, getKeyboardItems, hideBubbleMenu],
   );
+
+  useEffect(() => {
+    if (!activeMenu) return;
+
+    window.addEventListener("resize", updateLocalMenuLayout);
+    window.addEventListener("scroll", updateLocalMenuLayout, true);
+
+    return () => {
+      window.removeEventListener("resize", updateLocalMenuLayout);
+      window.removeEventListener("scroll", updateLocalMenuLayout, true);
+    };
+  }, [activeMenu, updateLocalMenuLayout]);
+
   useEffect(() => {
     if (!isBubbleMenuVisible) return;
 
@@ -434,6 +485,11 @@ function applyHighlightColor(color: string) {
       <TiptapBubbleMenu
         editor={editor}
         pluginKey={NOTION_BUBBLE_MENU_PLUGIN_KEY}
+        appendTo={() =>
+          editor.view.dom.closest<HTMLElement>(".tr-editor") ??
+          editor.view.dom.parentElement ??
+          document.body
+        }
         updateDelay={100}
         shouldShow={({ editor: currentEditor, state }) => {
           const { selection } = state;
@@ -445,7 +501,10 @@ function applyHighlightColor(color: string) {
         }}
         options={{
           placement: "bottom-start",
+          strategy: "fixed",
           offset: 10,
+          flip: { padding: 8 },
+          shift: { padding: 8 },
 
           onShow: () => setIsBubbleMenuVisible(true),
           onHide: () => {
@@ -469,18 +528,19 @@ function applyHighlightColor(color: string) {
             type="button"
             className="notion-bubble-select"
             disabled={turnGroup.disabled}
-            onClick={() =>
-              setActiveMenu((menu) =>
-                turnGroup.disabled ? null : menu === "turn" ? null : "turn",
-              )
-            }
+            onClick={() => toggleLocalMenu("turn", turnGroup.disabled)}
           >
             <span>{currentBlockLabel}</span>
             <ChevronDown className="size-3.5" />
           </button>
 
           {activeMenu === "turn" && (
-            <div className="notion-bubble-turn-menu notion-bubble-local-menu">
+            <div
+              className={cn(
+                "notion-bubble-turn-menu notion-bubble-local-menu",
+                menuPlacement === "top" && "notion-bubble-local-menu-top",
+              )}
+            >
               <div className="notion-bubble-menu-label">Turn Into</div>
               <TurnIntoItem
                 icon={<Pilcrow className="size-4" />}
@@ -693,11 +753,7 @@ function applyHighlightColor(color: string) {
             type="button"
             className="notion-bubble-color-trigger"
             disabled={colorGroup.disabled}
-            onClick={() =>
-              setActiveMenu((menu) =>
-                colorGroup.disabled ? null : menu === "color" ? null : "color",
-              )
-            }
+            onClick={() => toggleLocalMenu("color", colorGroup.disabled)}
           >
             <span
               className="notion-bubble-color-preview"
@@ -709,7 +765,12 @@ function applyHighlightColor(color: string) {
           </button>
 
           {activeMenu === "color" && (
-            <div className="notion-bubble-color-menu notion-bubble-local-menu notion-bubble-local-menu-end">
+            <div
+              className={cn(
+                "notion-bubble-color-menu notion-bubble-local-menu notion-bubble-local-menu-end",
+                menuPlacement === "top" && "notion-bubble-local-menu-top",
+              )}
+            >
               <div className="notion-bubble-menu-label">Recently Used</div>
               {recentColors.length > 0 ? (
                 <div className="notion-bubble-recent-colors">
@@ -835,17 +896,18 @@ function applyHighlightColor(color: string) {
             type="button"
             className="notion-bubble-more"
             disabled={alignGroup.disabled}
-            onClick={() =>
-              setActiveMenu((menu) =>
-                alignGroup.disabled ? null : menu === "more" ? null : "more",
-              )
-            }
+            onClick={() => toggleLocalMenu("more", alignGroup.disabled)}
           >
             <MoreVertical className="size-4" />
           </button>
 
           {activeMenu === "more" && (
-            <div className="notion-bubble-more-menu notion-bubble-local-menu notion-bubble-local-menu-end">
+            <div
+              className={cn(
+                "notion-bubble-more-menu notion-bubble-local-menu notion-bubble-local-menu-end",
+                menuPlacement === "top" && "notion-bubble-local-menu-top",
+              )}
+            >
               <MenuButton
                 disabled={control("alignLeft").disabled}
                 hidden={control("alignLeft").hidden}

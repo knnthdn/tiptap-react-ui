@@ -176,7 +176,7 @@ function RichTextEditorContent({
           hasFullHeightLayout && "flex h-full min-h-0 flex-col",
           wrapperClassName,
         )}
-        data-theme={theme}
+        data-theme={theme === "default" ? undefined : theme}
       >
         {(enablePreview || enableModeToggle) && (
           <div
