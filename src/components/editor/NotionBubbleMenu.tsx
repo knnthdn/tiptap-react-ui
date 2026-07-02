@@ -327,6 +327,17 @@ export default function NotionBubbleMenu({
     return "Text";
   }, [editorState]);
 
+  const currentBlockCompactLabel = useMemo(() => {
+    if (editorState.isHeading1) return "H1";
+    if (editorState.isHeading2) return "H2";
+    if (editorState.isHeading3) return "H3";
+    if (editorState.isBulletList) return "List";
+    if (editorState.isOrderedList) return "1.";
+    if (editorState.isTaskList) return "To-do";
+    if (editorState.isBlockquote) return "Quote";
+    return "Text";
+  }, [editorState]);
+
   const control = (extension: EditorExtensionName) => ({
     disabled: isExtensionDisabled(extensionState, extension),
     hidden: isExtensionHidden(extensionState, extension),
@@ -530,7 +541,12 @@ function applyHighlightColor(color: string) {
             disabled={turnGroup.disabled}
             onClick={() => toggleLocalMenu("turn", turnGroup.disabled)}
           >
-            <span>{currentBlockLabel}</span>
+            <span className="notion-bubble-select-label">
+              {currentBlockLabel}
+            </span>
+            <span className="notion-bubble-select-label-mobile">
+              {currentBlockCompactLabel}
+            </span>
             <ChevronDown className="size-3.5" />
           </button>
 

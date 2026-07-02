@@ -1954,6 +1954,10 @@
     padding: 0 0.55rem 0 0.7rem;
   }
 
+  .notion-bubble-select-label-mobile {
+    display: none;
+  }
+
   .notion-bubble-icon-button,
   .notion-bubble-color-trigger,
   .notion-bubble-more {
@@ -2703,6 +2707,63 @@
   }
 
   @media (max-width: 640px) {
+    .tr-notion-selection-bubble {
+      width: max-content;
+      max-width: calc(100vw - 1rem);
+      border-radius: var(--radius-lg);
+      padding: 0.2rem;
+    }
+
+    .tr-notion-selection-bubble-content {
+      max-width: 100%;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.1rem;
+    }
+
+    .notion-bubble-select {
+      width: auto;
+      min-width: 3.25rem;
+      padding: 0 0.35rem;
+      gap: 0.15rem;
+    }
+
+    .notion-bubble-select-label {
+      display: none;
+    }
+
+    .notion-bubble-select-label-mobile {
+      display: inline;
+      overflow: hidden;
+      max-width: 2.5rem;
+      text-overflow: ellipsis;
+    }
+
+    .notion-bubble-separator {
+      display: none;
+    }
+
+    .notion-bubble-command,
+    .notion-bubble-select,
+    .notion-bubble-icon-button,
+    .notion-bubble-color-trigger,
+    .notion-bubble-more {
+      height: 2rem;
+    }
+
+    .notion-bubble-icon-button,
+    .notion-bubble-more {
+      width: 2rem;
+    }
+
+    .notion-bubble-color-trigger {
+      width: 2.35rem;
+    }
+
+    .notion-bubble-local-menu {
+      max-width: calc(100vw - 1rem);
+    }
+
     .notion-block-controls-mobile {
       transform: translateX(calc(-20% - var(--drag-handle-gap)));
     }
