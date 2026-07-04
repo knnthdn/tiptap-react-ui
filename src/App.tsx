@@ -13,6 +13,7 @@ export default function App() {
         enablePreview={true}
         wrapperClassName="max-w-5xl mx-auto py-5"
         enableModeToggle
+        enableBubbleMenu={false}
       />
 
       {/* <NotionEditor

@@ -8,8 +8,8 @@
 @custom-variant dark (&:is(.tr-editor.dark, .tr-editor.dark *));
 
 @theme inline {
-  --font-heading: var(--tr-font-sans);
-  --font-sans: var(--tr-font-sans);
+  --font-heading: var(--tr-font-sans, inherit);
+  --font-sans: var(--tr-font-sans, inherit);
   --color-sidebar-ring: var(--tr-sidebar-ring);
   --color-sidebar-border: var(--tr-sidebar-border);
   --color-sidebar-accent-foreground: var(--tr-sidebar-accent-foreground);
@@ -51,7 +51,6 @@
 }
 
 .tr-editor {
-  --tr-font-sans: inherit;
   --tr-background: oklch(1 0 0);
   --tr-foreground: oklch(0.141 0.005 285.823);
   --tr-card: oklch(1 0 0);
@@ -159,7 +158,6 @@
 }
 
 .tr-editor .tr-editor {
-  --tr-font-sans: inherit;
   --tr-background: inherit;
   --tr-foreground: inherit;
   --tr-card: inherit;

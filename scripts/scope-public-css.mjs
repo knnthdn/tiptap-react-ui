@@ -153,16 +153,11 @@ root.walkDecls((decl) => {
   decl.prop = decl.prop.replace(tokenPattern, "--tr-$1");
   decl.value = decl.value
     .replace(tokenPattern, "--tr-$1")
-    .replace(/"Geist Variable", sans-serif/g, "var(--tr-font-sans)")
-    .replace(/Geist Variable,sans-serif/g, "var(--tr-font-sans)");
+    .replace(/"Geist Variable", sans-serif/g, "var(--tr-font-sans, inherit)")
+    .replace(/Geist Variable,sans-serif/g, "var(--tr-font-sans, inherit)");
 });
 
-let output = root.toString();
-
-output = output.replace(
-  /--tr-font-sans:var\(--tr-font-sans\)/g,
-  "--tr-font-sans:inherit",
-);
+const output = root.toString();
 
 fs.writeFileSync(cssPath, output);
 

@@ -35,6 +35,7 @@ export default function RichtextEditor({
   editor,
   onSave,
   enablePreview = false,
+  enableBubbleMenu = true,
   enableTableOfContents = false,
   tableOfContentsPosition = "right",
   enableWordCount = true,
@@ -96,6 +97,7 @@ export default function RichtextEditor({
         editor={editor}
         enableModeToggle={enableModeToggle}
         enablePreview={enablePreview}
+        enableBubbleMenu={enableBubbleMenu}
         enableTableOfContents={enableTableOfContents}
         tableOfContentsPosition={tableOfContentsPosition}
         enableWordCount={enableWordCount}
@@ -121,6 +123,7 @@ type RichTextEditorContentProps = {
   editor: NonNullable<RichTextEditorProps["editor"]>;
   enableModeToggle: boolean;
   enablePreview: boolean;
+  enableBubbleMenu: boolean;
   enableTableOfContents: boolean;
   tableOfContentsPosition: NonNullable<
     RichTextEditorProps["tableOfContentsPosition"]
@@ -145,6 +148,7 @@ function RichTextEditorContent({
   editor,
   enableModeToggle,
   enablePreview,
+  enableBubbleMenu,
   enableTableOfContents,
   tableOfContentsPosition,
   enableWordCount,
@@ -232,10 +236,12 @@ function RichTextEditorContent({
                 hasFullHeightLayout && "flex min-h-0 flex-1 flex-col",
               )}
             >
-              <NotionBubbleMenu
-                editor={editor}
-                extensionState={extensionState}
-              />
+              {enableBubbleMenu && (
+                <NotionBubbleMenu
+                  editor={editor}
+                  extensionState={extensionState}
+                />
+              )}
               <YoutubeBubbleMenu editor={editor} />
 
               <EditorContent

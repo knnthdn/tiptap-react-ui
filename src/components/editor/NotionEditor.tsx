@@ -296,6 +296,7 @@ function NotionEditorInner({
   editor,
   className,
   extensionState,
+  enableBubbleMenu = true,
 }: NotionEditorProps) {
   const { resolvedTheme } = useTheme();
   const [slashMenu, setSlashMenu] = useState<SlashMenuState>(
@@ -988,7 +989,12 @@ function NotionEditorInner({
             hasFullHeightLayout && "flex min-h-0 flex-1 flex-col",
           )}
         >
-          <NotionBubbleMenu editor={editor} extensionState={extensionState} />
+          {enableBubbleMenu && (
+            <NotionBubbleMenu
+              editor={editor}
+              extensionState={extensionState}
+            />
+          )}
           <YoutubeBubbleMenu editor={editor} />
 
           <EditorContent

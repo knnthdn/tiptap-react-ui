@@ -247,6 +247,22 @@ export type RichTextEditorProps = {
   enablePreview?: boolean;
 
   /**
+   * Controls whether the text-selection formatting bubble menu is rendered.
+   *
+   * The YouTube node menu remains available. Disabling the formatting bubble
+   * menu does not disable editor commands or keyboard shortcuts; use
+   * `extensionState` to control individual features.
+   *
+   * @default true
+   *
+   * @example
+   * ```tsx
+   * <RichTextEditor editor={editor} enableBubbleMenu={false} />
+   * ```
+   */
+  enableBubbleMenu?: boolean;
+
+  /**
    * Shows a generated table of contents in the JSON preview.
    *
    * `RenderHTML` and `editor.getHTML()` do not include a live TOC because the
@@ -407,6 +423,22 @@ export type NotionEditorProps = {
    * @default "light"
    */
   mode?: RichTextEditorMode;
+
+  /**
+   * Controls whether the text-selection formatting bubble menu is rendered.
+   *
+   * The YouTube node menu remains available. Disabling the formatting bubble
+   * menu does not disable editor commands or keyboard shortcuts; use
+   * `extensionState` to control individual features.
+   *
+   * @default true
+   *
+   * @example
+   * ```tsx
+   * <NotionEditor editor={editor} enableBubbleMenu={false} />
+   * ```
+   */
+  enableBubbleMenu?: boolean;
 
   /**
    * Controls the visibility and interactivity of built-in Notion editor
