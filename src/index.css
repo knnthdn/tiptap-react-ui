@@ -51,9 +51,7 @@
 }
 
 .tr-editor {
-  --tr-font-sans:
-    ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
-    "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --tr-font-sans: inherit;
   --tr-background: oklch(1 0 0);
   --tr-foreground: oklch(0.141 0.005 285.823);
   --tr-card: oklch(1 0 0);
@@ -197,7 +195,8 @@
 }
 
 .tr-editor {
-  @apply text-foreground font-sans;
+  @apply text-foreground;
+  font-family: var(--tr-font-sans, inherit);
 }
 
   .tr-editor[data-theme="pink"] {

@@ -161,7 +161,7 @@ let output = root.toString();
 
 output = output.replace(
   /--tr-font-sans:var\(--tr-font-sans\)/g,
-  "--tr-font-sans:ui-sans-serif,system-ui,sans-serif",
+  "--tr-font-sans:inherit",
 );
 
 fs.writeFileSync(cssPath, output);
