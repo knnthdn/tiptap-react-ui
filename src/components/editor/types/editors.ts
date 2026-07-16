@@ -552,6 +552,14 @@ export type RenderJSONProps = {
    * @default "right"
    */
   tableOfContentsPosition?: TableOfContentsPosition;
+
+  /**
+   * Fallback content displayed until the editor is initialized.
+   * This can be any valid React node, such as text, JSX, or a loading skeleton.
+   *
+   * @default undefined
+   */
+  fallback?: React.ReactNode;
 };
 
 //* RenderHTML Component

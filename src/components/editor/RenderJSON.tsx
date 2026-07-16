@@ -36,12 +36,13 @@ export default function RenderJSON({
   mode = "system",
   enableTableOfContents = false,
   tableOfContentsPosition = "right",
+  fallback = undefined,
 }: RenderJSONProps) {
   const tocSlotRef = useRef<HTMLDivElement | null>(null);
   const [fixedTocStyle, setFixedTocStyle] = useState<React.CSSProperties>();
   const [tableOfContentsItems, setTableOfContentsItems] =
     useState<TableOfContentData>([]);
-  const { editor } = useTiptapEditor({
+  const { editor, isEditorLoading } = useTiptapEditor({
     className: "max-h-none overflow-y-visible bg-transparent",
     content,
     editable: false,
@@ -82,7 +83,9 @@ export default function RenderJSON({
     };
   }, [enableTableOfContents, tableOfContentsItems.length]);
 
-  if (!editor) return null;
+  if (isEditorLoading) {
+    return fallback ?? null;
+  }
 
   return (
     <div
